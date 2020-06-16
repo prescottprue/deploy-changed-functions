@@ -12,6 +12,9 @@ inputs:
   functions-folder:
     description: 'Folder where functions live'
     default: 'functions'
+  ignore:
+    description: 'Globs to ignore in diffing'
+    default: 'functions'
   cache-folder:
     description: 'Folder to use for cache'
   local-folder:

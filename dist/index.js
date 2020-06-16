@@ -1227,15 +1227,18 @@ function run() {
                 core.info('Successfully checked for changes in top level files');
                 if (topLevelFilesChanged) {
                     deployArgs.push('functions', '--force');
-                    core.info('Top level files changed, deploying all functions');
+                    core.info('Global files changed, deploying all functions');
                 }
                 else {
-                    core.info('No top level files changed in functions');
+                    core.info('No global files changed in functions');
                 }
+            }
+            else {
+                core.info('No global files to check');
             }
             core.info('Checking for changes in src folder');
             // Check for change in files within src folder
-            const listOfChangedFiles = yield checkForDiff([`${functionsFolder}/src`], {
+            const listOfChangedFiles = yield checkForDiff(['src'], {
                 localCacheFolder,
                 functionsFolder,
             });
