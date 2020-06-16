@@ -51,7 +51,7 @@ async function checkForDiff(
         try {
           await exec(
             'diff',
-            ['-Nqr', '-w', '-B'].concat([
+            diffBaseArgs.concat([
               `${functionsFolder}/${topLevelPath}`,
               `${localCacheFolder}/${topLevelPath}`,
             ]),
@@ -253,7 +253,8 @@ export async function run(): Promise<void> {
     const functionsFolder = `${GITHUB_WORKSPACE}/${functionsFolderWithoutPrefix}`;
     // TODO: Use all files which are not ignored in functions folder as globals
     const topLevelFilesInput: string = core.getInput('global-paths');
-    const topLevelFilesToCheck: string[] = topLevelFilesInput?.split(',') || [];
+    const topLevelFilesToCheck: string[] =
+      topLevelFilesInput?.split(',').filter(Boolean) || [];
     const deployArgs = ['deploy', '--only'];
     const localCacheFolder = `${GITHUB_WORKSPACE}/${localFolder}/${folderSuffix}`;
 
@@ -268,7 +269,12 @@ export async function run(): Promise<void> {
       );
       const topLevelFilesChanged = !!listOfChangedTopLevelFiles.filter(Boolean)
         .length;
-      core.info('Successfully checked for changes');
+      core.info(
+        `List of changed top level files: ${listOfChangedTopLevelFiles.join(
+          '\n',
+        )}`,
+      );
+      core.info('Successfully checked for changes in top level files');
       if (topLevelFilesChanged) {
         deployArgs.push('functions', '--force');
         core.info('Top level files changed, deploying all functions');
@@ -277,8 +283,10 @@ export async function run(): Promise<void> {
       }
     }
 
+    core.info('Checking for changes in src folder');
+
     // Check for change in files within src folder
-    const listOfChangedFiles = await checkForDiff(topLevelFilesToCheck, {
+    const listOfChangedFiles = await checkForDiff([`${functionsFolder}/src`], {
       localCacheFolder,
       functionsFolder,
     });
