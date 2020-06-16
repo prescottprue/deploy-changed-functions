@@ -3,6 +3,7 @@ import { exec } from '@actions/exec';
 import { mkdirP } from '@actions/io';
 import { promises as fs, existsSync } from 'fs';
 import path from 'path';
+import { CONNREFUSED } from 'dns';
 
 // -m - parallelize on multiple "machines" (i.e. processes)
 // -q - quiet
@@ -27,6 +28,9 @@ async function checkForDiff(
   // TODO: Load ignore settings from functions.ignore of firebase.json
   // TODO: Include changes to firebase.json
   try {
+    core.info(
+      `Diffing files between paths: "${functionsFolder}" and "${localCacheFolder}"`,
+    );
     // TODO: Look into piping a list of files into diff to get a single diff result
     const pathsToIgnoreInput: string = core.getInput('ignore');
     const pathsToIgnore: string[] = pathsToIgnoreInput?.split(',') || [];
@@ -73,7 +77,7 @@ async function checkForDiff(
   }
 }
 
-interface CacheSettings {
+interface WriteCacheSettings {
   functionsFolder: string;
   storageBaseUrl: string;
 }
@@ -84,7 +88,7 @@ interface CacheSettings {
  */
 async function writeCache(
   filesToUpload: string[],
-  settings: CacheSettings,
+  settings: WriteCacheSettings,
 ): Promise<any> {
   const { functionsFolder, storageBaseUrl } = settings;
 
@@ -113,23 +117,28 @@ async function writeCache(
   }
 }
 
+interface DownloadCacheSettings {
+  localCacheFolder: string;
+  storageBaseUrl: string;
+}
+
 /**
  * @param cacheFolder - Cache folder
  * @param settings - Settings object
  */
 async function downloadCache(
   cacheFolder: string,
-  settings: CacheSettings,
+  settings: DownloadCacheSettings,
 ): Promise<any> {
-  const { functionsFolder, storageBaseUrl } = settings;
+  const { localCacheFolder, storageBaseUrl } = settings;
 
   // TODO: Look into creating a list of files and piping them to the stdin of gsutil
   try {
     const srcPath = `${storageBaseUrl}/${cacheFolder}`;
-    core.info(`Downloading cache from: "${srcPath}" to "${functionsFolder}"`);
+    core.info(`Downloading cache from: "${srcPath}" to "${localCacheFolder}"`);
     await exec(
       'gsutil',
-      gsutilDefaultArgs.concat(['cp', '-r', srcPath, `${functionsFolder}/`]),
+      gsutilDefaultArgs.concat(['cp', '-r', srcPath, `${localCacheFolder}/`]),
     );
   } catch (error) {
     throw new Error(`Error downloading local cache: ${error.message}`);
@@ -238,8 +247,9 @@ export async function run(): Promise<void> {
 
   try {
     // Create local folder for cache
-    await createLocalCacheFolder(`${GITHUB_WORKSPACE}/${localFolder}`);
-    core.info('Created local cache folder');
+    const localCacheFolder = `${GITHUB_WORKSPACE}/${localFolder}`;
+    await createLocalCacheFolder(localCacheFolder);
+    core.info(`Created local cache folder "${localCacheFolder}"`);
 
     // Load functions settings from firebase.json
     const firebaseJson = await loadFirebaseJson();
@@ -250,7 +260,7 @@ export async function run(): Promise<void> {
     const functionsFolder = `${GITHUB_WORKSPACE}/${functionsFolderWithoutPrefix}`;
 
     // Download Functions cache from Cloud Storage
-    await downloadCache(cacheFolder, { functionsFolder, storageBaseUrl });
+    await downloadCache(cacheFolder, { localCacheFolder, storageBaseUrl });
     // TODO: Handle error downloading due to folder not existing
     core.info('Successfully downloaded functions cache');
 
@@ -259,14 +269,13 @@ export async function run(): Promise<void> {
     const topLevelFilesToCheck: string[] =
       topLevelFilesInput?.split(',').filter(Boolean) || [];
     const deployArgs = ['deploy', '--only'];
-    const localCacheFolder = `${GITHUB_WORKSPACE}/${localFolder}/${folderSuffix}`;
 
     // Check for changes in top level files
     if (topLevelFilesToCheck?.length) {
       const listOfChangedTopLevelFiles = await checkForDiff(
         topLevelFilesToCheck,
         {
-          localCacheFolder,
+          localCacheFolder: `${localCacheFolder}/${folderSuffix}`,
           functionsFolder,
         },
       );
@@ -293,7 +302,7 @@ export async function run(): Promise<void> {
     // Check for change in files within src folder
     // TODO: Switch this to checking dist so that babel config is handled
     const listOfChangedFiles = await checkForDiff(['src'], {
-      localCacheFolder,
+      localCacheFolder: `${localCacheFolder}/${folderSuffix}`,
       functionsFolder,
     });
     core.info(`List of changed source files: ${listOfChangedFiles.join('\n')}`);
@@ -307,6 +316,7 @@ export async function run(): Promise<void> {
     }
 
     if (deployArgs?.length > 2) {
+      core.info(`Would be calling deploy with args: ${deployArgs.join(' ')}`);
       const token = core.getInput('token');
       // Exit if token is missing
       if (!token && !process.env.FIREBASE_TOKEN) {

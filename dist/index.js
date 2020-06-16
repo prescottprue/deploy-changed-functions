@@ -1025,6 +1025,7 @@ function checkForDiff(listOfFilesToDiff, options) {
         // TODO: Load ignore settings from functions.ignore of firebase.json
         // TODO: Include changes to firebase.json
         try {
+            core.info(`Diffing files between paths: "${functionsFolder}" and "${localCacheFolder}"`);
             // TODO: Look into piping a list of files into diff to get a single diff result
             const pathsToIgnoreInput = core.getInput('ignore');
             const pathsToIgnore = (pathsToIgnoreInput === null || pathsToIgnoreInput === void 0 ? void 0 : pathsToIgnoreInput.split(',')) || [];
@@ -1098,12 +1099,12 @@ function writeCache(filesToUpload, settings) {
  */
 function downloadCache(cacheFolder, settings) {
     return __awaiter(this, void 0, void 0, function* () {
-        const { functionsFolder, storageBaseUrl } = settings;
+        const { localCacheFolder, storageBaseUrl } = settings;
         // TODO: Look into creating a list of files and piping them to the stdin of gsutil
         try {
             const srcPath = `${storageBaseUrl}/${cacheFolder}`;
-            core.info(`Downloading cache from: "${srcPath}" to "${functionsFolder}"`);
-            yield exec_1.exec('gsutil', gsutilDefaultArgs.concat(['cp', '-r', srcPath, `${functionsFolder}/`]));
+            core.info(`Downloading cache from: "${srcPath}" to "${localCacheFolder}"`);
+            yield exec_1.exec('gsutil', gsutilDefaultArgs.concat(['cp', '-r', srcPath, `${localCacheFolder}/`]));
         }
         catch (error) {
             throw new Error(`Error downloading local cache: ${error.message}`);
@@ -1197,26 +1198,26 @@ function run() {
         }
         try {
             // Create local folder for cache
-            yield createLocalCacheFolder(`${GITHUB_WORKSPACE}/${localFolder}`);
-            core.info('Created local cache folder');
+            const localCacheFolder = `${GITHUB_WORKSPACE}/${localFolder}`;
+            yield createLocalCacheFolder(localCacheFolder);
+            core.info(`Created local cache folder "${localCacheFolder}"`);
             // Load functions settings from firebase.json
             const firebaseJson = yield loadFirebaseJson();
             core.info('Successfully loaded firebase.json');
             const functionsFolderWithoutPrefix = ((_a = firebaseJson.functions) === null || _a === void 0 ? void 0 : _a.source) || core.getInput('functions-folder');
             const functionsFolder = `${GITHUB_WORKSPACE}/${functionsFolderWithoutPrefix}`;
             // Download Functions cache from Cloud Storage
-            yield downloadCache(cacheFolder, { functionsFolder, storageBaseUrl });
+            yield downloadCache(cacheFolder, { localCacheFolder, storageBaseUrl });
             // TODO: Handle error downloading due to folder not existing
             core.info('Successfully downloaded functions cache');
             // TODO: Use all files which are not ignored in functions folder as globals
             const topLevelFilesInput = core.getInput('global-paths');
             const topLevelFilesToCheck = (topLevelFilesInput === null || topLevelFilesInput === void 0 ? void 0 : topLevelFilesInput.split(',').filter(Boolean)) || [];
             const deployArgs = ['deploy', '--only'];
-            const localCacheFolder = `${GITHUB_WORKSPACE}/${localFolder}/${folderSuffix}`;
             // Check for changes in top level files
             if (topLevelFilesToCheck === null || topLevelFilesToCheck === void 0 ? void 0 : topLevelFilesToCheck.length) {
                 const listOfChangedTopLevelFiles = yield checkForDiff(topLevelFilesToCheck, {
-                    localCacheFolder,
+                    localCacheFolder: `${localCacheFolder}/${folderSuffix}`,
                     functionsFolder,
                 });
                 const topLevelFilesChanged = !!listOfChangedTopLevelFiles.filter(Boolean)
@@ -1238,7 +1239,7 @@ function run() {
             // Check for change in files within src folder
             // TODO: Switch this to checking dist so that babel config is handled
             const listOfChangedFiles = yield checkForDiff(['src'], {
-                localCacheFolder,
+                localCacheFolder: `${localCacheFolder}/${folderSuffix}`,
                 functionsFolder,
             });
             core.info(`List of changed source files: ${listOfChangedFiles.join('\n')}`);
@@ -1250,6 +1251,7 @@ function run() {
                 core.info('No functions source code changed');
             }
             if ((deployArgs === null || deployArgs === void 0 ? void 0 : deployArgs.length) > 2) {
+                core.info(`Would be calling deploy with args: ${deployArgs.join(' ')}`);
                 const token = core.getInput('token');
                 // Exit if token is missing
                 if (!token && !process.env.FIREBASE_TOKEN) {
