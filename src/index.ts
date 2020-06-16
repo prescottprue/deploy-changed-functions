@@ -150,10 +150,6 @@ interface FirebaseJson {
  * @returns {object} Contents of firebase.json
  */
 async function loadFirebaseJson(): Promise<FirebaseJson> {
-  const workspace = process.env.GITHUB_WORKSPACE;
-  if (!workspace) {
-    throw new Error('Missing GITHUB_WORKSPACE!');
-  }
   const firebaseJsonPath = `${workspace}/firebase.json`;
   if (!existsSync(firebaseJsonPath)) {
     core.warning(`firebase.json not found at path: "${firebaseJsonPath}"`);
@@ -232,7 +228,10 @@ export async function run(): Promise<void> {
   const projectId = core.getInput('project_id');
   const storageBucket = core.getInput('storage-bucket');
   const storageBaseUrl = `gs://${storageBucket || projectId}.appspot.com`;
-
+  const { GITHUB_WORKSPACE } = process.env;
+  if (!GITHUB_WORKSPACE) {
+    core.setFailed('Missing GITHUB_WORKSPACE!');
+  }
   try {
     // Create local folder for cache
     await createLocalCacheFolder(localFolder);
@@ -247,20 +246,21 @@ export async function run(): Promise<void> {
     // TODO: Handle error downloading due to folder not existing
     core.info('Successfully downloaded functions cache');
 
-    const functionsFolder =
+    const functionsFolderWithoutPrefix =
       firebaseJson.functions?.source || core.getInput('functions-folder');
-
+    const functionsFolder = `${GITHUB_WORKSPACE}/${functionsFolderWithoutPrefix}`;
     // TODO: Use all files which are not ignored in functions folder as globals
     const topLevelFilesInput: string = core.getInput('global-paths');
     const topLevelFilesToCheck: string[] = topLevelFilesInput?.split(',') || [];
     const deployArgs = ['deploy', '--only'];
+    const localCacheFolder = `${GITHUB_WORKSPACE}/${localFolder}/${folderSuffix}`;
 
     // Check for changes in top level files
     if (topLevelFilesToCheck?.length) {
       const listOfChangedTopLevelFiles = await checkForDiff(
         topLevelFilesToCheck,
         {
-          localCacheFolder: `${localFolder}/${folderSuffix}`,
+          localCacheFolder,
           functionsFolder,
         },
       );
@@ -277,7 +277,7 @@ export async function run(): Promise<void> {
 
     // Check for change in files within src folder
     const listOfChangedFiles = await checkForDiff(topLevelFilesToCheck, {
-      localCacheFolder: `${localFolder}/${folderSuffix}`,
+      localCacheFolder,
       functionsFolder,
     });
     core.info(`List of changed source files: ${listOfChangedFiles.join('\n')}`);
@@ -292,6 +292,14 @@ export async function run(): Promise<void> {
 
     if (deployArgs?.length > 2) {
       // Call deploy command
+      const token = core.getInput('token');
+      if (!token && !process.env.FIREBASE_TOKEN) {
+        core.setFailed(
+          'token input or FIREBASE_TOKEN environment variable are required',
+        );
+      }
+      // Add deploy token to arguments
+      deployArgs.push('--token', process.env.FIREBASE_TOKEN || token);
       await exec.exec('firebase', deployArgs.concat(['--project', projectId]));
     }
 
