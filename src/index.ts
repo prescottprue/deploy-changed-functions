@@ -73,7 +73,7 @@ async function checkForDiff(
   }
 }
 
-interface WriteSettings {
+interface CacheSettings {
   functionsFolder: string;
   storageBaseUrl: string;
 }
@@ -84,9 +84,10 @@ interface WriteSettings {
  */
 async function writeCache(
   filesToUpload: string[],
-  settings: WriteSettings,
+  settings: CacheSettings,
 ): Promise<any> {
   const { functionsFolder, storageBaseUrl } = settings;
+
   // TODO: Look into creating a list of files and piping them to the stdin of gsutil
   try {
     await Promise.all(
@@ -107,29 +108,28 @@ async function writeCache(
         );
       }),
     );
-  } catch (err) {
-    throw new Error('Error writing functions cache');
+  } catch (error) {
+    throw new Error(`Error uploading functions cache: ${error.message}`);
   }
 }
 
 /**
  * @param cacheFolder - Cache folder
- * @param storageBaseUrl - Base URL for storage
+ * @param settings - Settings object
  */
 async function downloadCache(
   cacheFolder: string,
-  storageBaseUrl: string,
+  settings: CacheSettings,
 ): Promise<any> {
+  const { functionsFolder, storageBaseUrl } = settings;
+
   // TODO: Look into creating a list of files and piping them to the stdin of gsutil
   try {
+    const srcPath = `${storageBaseUrl}/${cacheFolder}`;
+    core.info(`Downloading cache from: "${srcPath}" to "${functionsFolder}"`);
     await exec(
       'gsutil',
-      gsutilDefaultArgs.concat([
-        'cp',
-        '-r',
-        `${storageBaseUrl}/${cacheFolder}`,
-        `${storageBaseUrl}/`,
-      ]),
+      gsutilDefaultArgs.concat(['cp', '-r', srcPath, `${functionsFolder}/`]),
     );
   } catch (error) {
     throw new Error(`Error downloading local cache: ${error.message}`);
@@ -288,6 +288,7 @@ export async function run(): Promise<void> {
     core.info('Checking for changes in src folder');
 
     // Check for change in files within src folder
+    // TODO: Switch this to checking dist so that babel config is handled
     const listOfChangedFiles = await checkForDiff(['src'], {
       localCacheFolder,
       functionsFolder,
