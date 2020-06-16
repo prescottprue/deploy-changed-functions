@@ -1006,8 +1006,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.run = void 0;
 const core = __importStar(__webpack_require__(470));
+const exec_1 = __webpack_require__(986);
+const io_1 = __webpack_require__(1);
 const fs_1 = __webpack_require__(747);
-const exec = __importStar(__webpack_require__(986));
 const path_1 = __importDefault(__webpack_require__(622));
 // -m - parallelize on multiple "machines" (i.e. processes)
 // -q - quiet
@@ -1045,7 +1046,7 @@ function checkForDiff(listOfFilesToDiff, options) {
                     });
                 }
                 try {
-                    yield exec.exec('diff', ['-Nqr', '-w', '-B'].concat([
+                    yield exec_1.exec('diff', ['-Nqr', '-w', '-B'].concat([
                         `${functionsFolder}/${topLevelPath}`,
                         `${localCacheFolder}/${topLevelPath}`,
                     ]), options);
@@ -1080,7 +1081,7 @@ function writeCache(filesToUpload, settings) {
                 if (isDirectory) {
                     copyArgs.push('-r');
                 }
-                return exec.exec('gsutil', copyArgs.concat([
+                return exec_1.exec('gsutil', copyArgs.concat([
                     `${functionsFolder}/${topLevelPath}`,
                     `${storageBaseUrl}/${isDirectory ? '' : topLevelPath}`,
                 ]));
@@ -1099,7 +1100,7 @@ function downloadCache(cacheFolder, storageBaseUrl) {
     return __awaiter(this, void 0, void 0, function* () {
         // TODO: Look into creating a list of files and piping them to the stdin of gsutil
         try {
-            yield exec.exec('gsutil', gsutilDefaultArgs.concat([
+            yield exec_1.exec('gsutil', gsutilDefaultArgs.concat([
                 'cp',
                 '-r',
                 `${storageBaseUrl}/${cacheFolder}`,
@@ -1117,11 +1118,8 @@ function downloadCache(cacheFolder, storageBaseUrl) {
  */
 function loadFirebaseJson() {
     return __awaiter(this, void 0, void 0, function* () {
-        const workspace = process.env.GITHUB_WORKSPACE;
-        if (!workspace) {
-            throw new Error('Missing GITHUB_WORKSPACE!');
-        }
-        const firebaseJsonPath = `${workspace}/firebase.json`;
+        const { GITHUB_WORKSPACE } = process.env;
+        const firebaseJsonPath = `${GITHUB_WORKSPACE}/firebase.json`;
         if (!fs_1.existsSync(firebaseJsonPath)) {
             core.warning(`firebase.json not found at path: "${firebaseJsonPath}"`);
             return {};
@@ -1149,7 +1147,7 @@ function createLocalCacheFolder(localFolder) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             // Create local folder for cache
-            yield exec.exec('mkdir', ['-p', localFolder]);
+            yield io_1.mkdirP(localFolder);
         }
         catch (error) {
             throw new Error(`Error creating local cache folder: ${error}`);
@@ -1195,9 +1193,13 @@ function run() {
         const projectId = core.getInput('project_id');
         const storageBucket = core.getInput('storage-bucket');
         const storageBaseUrl = `gs://${storageBucket || projectId}.appspot.com`;
+        const { GITHUB_WORKSPACE } = process.env;
+        if (!GITHUB_WORKSPACE) {
+            core.setFailed('Missing GITHUB_WORKSPACE!');
+        }
         try {
             // Create local folder for cache
-            yield createLocalCacheFolder(localFolder);
+            yield createLocalCacheFolder(`${GITHUB_WORKSPACE}/${localFolder}`);
             core.info('Created local cache folder');
             // Load functions settings from firebase.json
             const firebaseJson = yield loadFirebaseJson();
@@ -1206,15 +1208,17 @@ function run() {
             yield downloadCache(cacheFolder, storageBaseUrl);
             // TODO: Handle error downloading due to folder not existing
             core.info('Successfully downloaded functions cache');
-            const functionsFolder = ((_a = firebaseJson.functions) === null || _a === void 0 ? void 0 : _a.source) || core.getInput('functions-folder');
+            const functionsFolderWithoutPrefix = ((_a = firebaseJson.functions) === null || _a === void 0 ? void 0 : _a.source) || core.getInput('functions-folder');
+            const functionsFolder = `${GITHUB_WORKSPACE}/${functionsFolderWithoutPrefix}`;
             // TODO: Use all files which are not ignored in functions folder as globals
             const topLevelFilesInput = core.getInput('global-paths');
             const topLevelFilesToCheck = (topLevelFilesInput === null || topLevelFilesInput === void 0 ? void 0 : topLevelFilesInput.split(',')) || [];
             const deployArgs = ['deploy', '--only'];
+            const localCacheFolder = `${GITHUB_WORKSPACE}/${localFolder}/${folderSuffix}`;
             // Check for changes in top level files
             if (topLevelFilesToCheck === null || topLevelFilesToCheck === void 0 ? void 0 : topLevelFilesToCheck.length) {
                 const listOfChangedTopLevelFiles = yield checkForDiff(topLevelFilesToCheck, {
-                    localCacheFolder: `${localFolder}/${folderSuffix}`,
+                    localCacheFolder,
                     functionsFolder,
                 });
                 const topLevelFilesChanged = !!listOfChangedTopLevelFiles.filter(Boolean)
@@ -1230,7 +1234,7 @@ function run() {
             }
             // Check for change in files within src folder
             const listOfChangedFiles = yield checkForDiff(topLevelFilesToCheck, {
-                localCacheFolder: `${localFolder}/${folderSuffix}`,
+                localCacheFolder,
                 functionsFolder,
             });
             core.info(`List of changed source files: ${listOfChangedFiles.join('\n')}`);
@@ -1242,8 +1246,15 @@ function run() {
                 core.info('No functions source code changed');
             }
             if ((deployArgs === null || deployArgs === void 0 ? void 0 : deployArgs.length) > 2) {
+                const token = core.getInput('token');
+                // Exit if token is missing
+                if (!token && !process.env.FIREBASE_TOKEN) {
+                    core.setFailed('token input or FIREBASE_TOKEN environment variable are required');
+                }
+                // Add deploy token to arguments
+                deployArgs.push('--token', process.env.FIREBASE_TOKEN || token);
                 // Call deploy command
-                yield exec.exec('firebase', deployArgs.concat(['--project', projectId]));
+                yield exec_1.exec('firebase', deployArgs.concat(['--project', projectId]));
             }
             // Re-upload files to cache
             yield writeCache(topLevelFilesToCheck, { functionsFolder, storageBaseUrl });

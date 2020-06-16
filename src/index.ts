@@ -1,6 +1,7 @@
 import * as core from '@actions/core';
+import { exec } from '@actions/exec';
+import { mkdirP } from '@actions/io';
 import { promises as fs, existsSync } from 'fs';
-import * as exec from '@actions/exec';
 import path from 'path';
 
 // -m - parallelize on multiple "machines" (i.e. processes)
@@ -48,7 +49,7 @@ async function checkForDiff(
           });
         }
         try {
-          await exec.exec(
+          await exec(
             'diff',
             ['-Nqr', '-w', '-B'].concat([
               `${functionsFolder}/${topLevelPath}`,
@@ -97,7 +98,7 @@ async function writeCache(
           copyArgs.push('-r');
         }
 
-        return exec.exec(
+        return exec(
           'gsutil',
           copyArgs.concat([
             `${functionsFolder}/${topLevelPath}`,
@@ -121,7 +122,7 @@ async function downloadCache(
 ): Promise<any> {
   // TODO: Look into creating a list of files and piping them to the stdin of gsutil
   try {
-    await exec.exec(
+    await exec(
       'gsutil',
       gsutilDefaultArgs.concat([
         'cp',
@@ -150,7 +151,8 @@ interface FirebaseJson {
  * @returns {object} Contents of firebase.json
  */
 async function loadFirebaseJson(): Promise<FirebaseJson> {
-  const firebaseJsonPath = `${workspace}/firebase.json`;
+  const { GITHUB_WORKSPACE } = process.env;
+  const firebaseJsonPath = `${GITHUB_WORKSPACE}/firebase.json`;
   if (!existsSync(firebaseJsonPath)) {
     core.warning(`firebase.json not found at path: "${firebaseJsonPath}"`);
     return {};
@@ -175,7 +177,7 @@ async function loadFirebaseJson(): Promise<FirebaseJson> {
 async function createLocalCacheFolder(localFolder: string): Promise<void> {
   try {
     // Create local folder for cache
-    await exec.exec('mkdir', ['-p', localFolder]);
+    await mkdirP(localFolder);
   } catch (error) {
     throw new Error(`Error creating local cache folder: ${error}`);
   }
@@ -234,7 +236,7 @@ export async function run(): Promise<void> {
   }
   try {
     // Create local folder for cache
-    await createLocalCacheFolder(localFolder);
+    await createLocalCacheFolder(`${GITHUB_WORKSPACE}/${localFolder}`);
     core.info('Created local cache folder');
 
     // Load functions settings from firebase.json
@@ -291,8 +293,8 @@ export async function run(): Promise<void> {
     }
 
     if (deployArgs?.length > 2) {
-      // Call deploy command
       const token = core.getInput('token');
+      // Exit if token is missing
       if (!token && !process.env.FIREBASE_TOKEN) {
         core.setFailed(
           'token input or FIREBASE_TOKEN environment variable are required',
@@ -300,7 +302,8 @@ export async function run(): Promise<void> {
       }
       // Add deploy token to arguments
       deployArgs.push('--token', process.env.FIREBASE_TOKEN || token);
-      await exec.exec('firebase', deployArgs.concat(['--project', projectId]));
+      // Call deploy command
+      await exec('firebase', deployArgs.concat(['--project', projectId]));
     }
 
     // Re-upload files to cache
