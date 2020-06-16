@@ -1007,7 +1007,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.run = void 0;
 const core = __importStar(__webpack_require__(470));
 const fs_1 = __webpack_require__(747);
-const exec_1 = __importDefault(__webpack_require__(986));
+const exec = __importStar(__webpack_require__(986));
 const path_1 = __importDefault(__webpack_require__(622));
 // -m - parallelize on multiple "machines" (i.e. processes)
 // -q - quiet
@@ -1045,7 +1045,7 @@ function checkForDiff(listOfFilesToDiff, options) {
                     });
                 }
                 try {
-                    yield exec_1.default.exec('diff', ['-Nqr', '-w', '-B'].concat([
+                    yield exec.exec('diff', ['-Nqr', '-w', '-B'].concat([
                         `${functionsFolder}/${topLevelPath}`,
                         `${localCacheFolder}/${topLevelPath}`,
                     ]), options);
@@ -1080,7 +1080,7 @@ function writeCache(filesToUpload, settings) {
                 if (isDirectory) {
                     copyArgs.push('-r');
                 }
-                return exec_1.default.exec('gsutil', copyArgs.concat([
+                return exec.exec('gsutil', copyArgs.concat([
                     `${functionsFolder}/${topLevelPath}`,
                     `${storageBaseUrl}/${isDirectory ? '' : topLevelPath}`,
                 ]));
@@ -1099,7 +1099,7 @@ function downloadCache(cacheFolder, storageBaseUrl) {
     return __awaiter(this, void 0, void 0, function* () {
         // TODO: Look into creating a list of files and piping them to the stdin of gsutil
         try {
-            yield exec_1.default.exec('gsutil', gsutilDefaultArgs.concat([
+            yield exec.exec('gsutil', gsutilDefaultArgs.concat([
                 'cp',
                 '-r',
                 `${storageBaseUrl}/${cacheFolder}`,
@@ -1149,7 +1149,7 @@ function createLocalCacheFolder(localFolder) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             // Create local folder for cache
-            yield exec_1.default.exec('mkdir', ['-p', localFolder]);
+            yield exec.exec('mkdir', ['-p', localFolder]);
         }
         catch (error) {
             throw new Error(`Error creating local cache folder: ${error}`);
@@ -1206,27 +1206,27 @@ function run() {
             yield downloadCache(cacheFolder, storageBaseUrl);
             // TODO: Handle error downloading due to folder not existing
             core.info('Successfully downloaded functions cache');
+            const functionsFolder = ((_a = firebaseJson.functions) === null || _a === void 0 ? void 0 : _a.source) || core.getInput('functions-folder');
             // TODO: Use all files which are not ignored in functions folder as globals
             const topLevelFilesInput = core.getInput('global-paths');
-            const topLevelFilesToCheck = (topLevelFilesInput === null || topLevelFilesInput === void 0 ? void 0 : topLevelFilesInput.split(',')) || [
-                'package.json',
-            ];
-            const functionsFolder = ((_a = firebaseJson.functions) === null || _a === void 0 ? void 0 : _a.source) || core.getInput('functions-folder');
-            // Check for change in files
-            const listOfChangedTopLevelFiles = yield checkForDiff(topLevelFilesToCheck, {
-                localCacheFolder: `${localFolder}/${folderSuffix}`,
-                functionsFolder,
-            });
-            const topLevelFilesChanged = !!listOfChangedTopLevelFiles.filter(Boolean)
-                .length;
-            core.info('Successfully checked for changes');
+            const topLevelFilesToCheck = (topLevelFilesInput === null || topLevelFilesInput === void 0 ? void 0 : topLevelFilesInput.split(',')) || [];
             const deployArgs = ['deploy', '--only'];
-            if (topLevelFilesChanged) {
-                deployArgs.push('functions', '--force');
-                core.info('Top level files changed, deploying all functions');
-            }
-            else {
-                core.info('No top level files changed in functions');
+            // Check for changes in top level files
+            if (topLevelFilesToCheck === null || topLevelFilesToCheck === void 0 ? void 0 : topLevelFilesToCheck.length) {
+                const listOfChangedTopLevelFiles = yield checkForDiff(topLevelFilesToCheck, {
+                    localCacheFolder: `${localFolder}/${folderSuffix}`,
+                    functionsFolder,
+                });
+                const topLevelFilesChanged = !!listOfChangedTopLevelFiles.filter(Boolean)
+                    .length;
+                core.info('Successfully checked for changes');
+                if (topLevelFilesChanged) {
+                    deployArgs.push('functions', '--force');
+                    core.info('Top level files changed, deploying all functions');
+                }
+                else {
+                    core.info('No top level files changed in functions');
+                }
             }
             // Check for change in files within src folder
             const listOfChangedFiles = yield checkForDiff(topLevelFilesToCheck, {
@@ -1241,11 +1241,11 @@ function run() {
             else {
                 core.info('No functions source code changed');
             }
-            if (deployArgs === null || deployArgs === void 0 ? void 0 : deployArgs.length) {
+            if ((deployArgs === null || deployArgs === void 0 ? void 0 : deployArgs.length) > 2) {
                 // Call deploy command
-                yield exec_1.default.exec('firebase', deployArgs);
+                yield exec.exec('firebase', deployArgs.concat(['--project', projectId]));
             }
-            // Reupload files to cache
+            // Re-upload files to cache
             yield writeCache(topLevelFilesToCheck, { functionsFolder, storageBaseUrl });
         }
         catch (error) {

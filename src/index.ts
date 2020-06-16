@@ -1,6 +1,6 @@
 import * as core from '@actions/core';
 import { promises as fs, existsSync } from 'fs';
-import exec from '@actions/exec';
+import * as exec from '@actions/exec';
 import path from 'path';
 
 // -m - parallelize on multiple "machines" (i.e. processes)
@@ -292,7 +292,7 @@ export async function run(): Promise<void> {
 
     if (deployArgs?.length > 2) {
       // Call deploy command
-      await exec.exec('firebase', deployArgs);
+      await exec.exec('firebase', deployArgs.concat(['--project', projectId]));
     }
 
     // Re-upload files to cache

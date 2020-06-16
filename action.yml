@@ -5,6 +5,10 @@ inputs:
     description: 'ID of Google Cloud Project'
     required: true
     default: 'World'
+  token:
+    description: 'Firebase CI token (used for deploy call)'
+    required: true
+    default: 'World'
   functions-folder:
     description: 'Folder where functions live'
     default: 'functions'
