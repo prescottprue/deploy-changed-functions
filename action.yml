@@ -1,0 +1,19 @@
+name: 'Deploy Only Changed'
+description: 'Greet someone and record the time'
+inputs:
+  project_id:
+    description: 'ID of Google Cloud Project'
+    required: true
+    default: 'World'
+  functions-folder:
+    description: 'Folder where functions live'
+    default: 'functions'
+  cache-folder:
+    description: 'Folder to use for cache'
+  local-folder:
+    description: 'Local folder to use for cache'
+  storage-bucket:
+    description: 'Cloud Storage Bucket'
+runs:
+  using: 'node12'
+  main: 'dist/index.js'
