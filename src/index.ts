@@ -230,10 +230,12 @@ export async function run(): Promise<void> {
   const projectId = core.getInput('project_id');
   const storageBucket = core.getInput('storage-bucket');
   const storageBaseUrl = `gs://${storageBucket || projectId}.appspot.com`;
+
   const { GITHUB_WORKSPACE } = process.env;
   if (!GITHUB_WORKSPACE) {
     core.setFailed('Missing GITHUB_WORKSPACE!');
   }
+
   try {
     // Create local folder for cache
     await createLocalCacheFolder(`${GITHUB_WORKSPACE}/${localFolder}`);
@@ -243,14 +245,15 @@ export async function run(): Promise<void> {
     const firebaseJson = await loadFirebaseJson();
     core.info('Successfully loaded firebase.json');
 
-    // Download Functions cache from Cloud Storage
-    await downloadCache(cacheFolder, storageBaseUrl);
-    // TODO: Handle error downloading due to folder not existing
-    core.info('Successfully downloaded functions cache');
-
     const functionsFolderWithoutPrefix =
       firebaseJson.functions?.source || core.getInput('functions-folder');
     const functionsFolder = `${GITHUB_WORKSPACE}/${functionsFolderWithoutPrefix}`;
+
+    // Download Functions cache from Cloud Storage
+    await downloadCache(cacheFolder, { functionsFolder, storageBaseUrl });
+    // TODO: Handle error downloading due to folder not existing
+    core.info('Successfully downloaded functions cache');
+
     // TODO: Use all files which are not ignored in functions folder as globals
     const topLevelFilesInput: string = core.getInput('global-paths');
     const topLevelFilesToCheck: string[] =

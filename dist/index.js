@@ -1087,25 +1087,23 @@ function writeCache(filesToUpload, settings) {
                 ]));
             })));
         }
-        catch (err) {
-            throw new Error('Error writing functions cache');
+        catch (error) {
+            throw new Error(`Error uploading functions cache: ${error.message}`);
         }
     });
 }
 /**
  * @param cacheFolder - Cache folder
- * @param storageBaseUrl - Base URL for storage
+ * @param settings - Settings object
  */
-function downloadCache(cacheFolder, storageBaseUrl) {
+function downloadCache(cacheFolder, settings) {
     return __awaiter(this, void 0, void 0, function* () {
+        const { functionsFolder, storageBaseUrl } = settings;
         // TODO: Look into creating a list of files and piping them to the stdin of gsutil
         try {
-            yield exec_1.exec('gsutil', gsutilDefaultArgs.concat([
-                'cp',
-                '-r',
-                `${storageBaseUrl}/${cacheFolder}`,
-                `${storageBaseUrl}/`,
-            ]));
+            const srcPath = `${storageBaseUrl}/${cacheFolder}`;
+            core.info(`Downloading cache from: "${srcPath}" to "${functionsFolder}"`);
+            yield exec_1.exec('gsutil', gsutilDefaultArgs.concat(['cp', '-r', srcPath, `${functionsFolder}/`]));
         }
         catch (error) {
             throw new Error(`Error downloading local cache: ${error.message}`);
@@ -1204,12 +1202,12 @@ function run() {
             // Load functions settings from firebase.json
             const firebaseJson = yield loadFirebaseJson();
             core.info('Successfully loaded firebase.json');
-            // Download Functions cache from Cloud Storage
-            yield downloadCache(cacheFolder, storageBaseUrl);
-            // TODO: Handle error downloading due to folder not existing
-            core.info('Successfully downloaded functions cache');
             const functionsFolderWithoutPrefix = ((_a = firebaseJson.functions) === null || _a === void 0 ? void 0 : _a.source) || core.getInput('functions-folder');
             const functionsFolder = `${GITHUB_WORKSPACE}/${functionsFolderWithoutPrefix}`;
+            // Download Functions cache from Cloud Storage
+            yield downloadCache(cacheFolder, { functionsFolder, storageBaseUrl });
+            // TODO: Handle error downloading due to folder not existing
+            core.info('Successfully downloaded functions cache');
             // TODO: Use all files which are not ignored in functions folder as globals
             const topLevelFilesInput = core.getInput('global-paths');
             const topLevelFilesToCheck = (topLevelFilesInput === null || topLevelFilesInput === void 0 ? void 0 : topLevelFilesInput.split(',').filter(Boolean)) || [];
@@ -1238,6 +1236,7 @@ function run() {
             }
             core.info('Checking for changes in src folder');
             // Check for change in files within src folder
+            // TODO: Switch this to checking dist so that babel config is handled
             const listOfChangedFiles = yield checkForDiff(['src'], {
                 localCacheFolder,
                 functionsFolder,
