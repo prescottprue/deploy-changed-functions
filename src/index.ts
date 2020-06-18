@@ -1,4 +1,5 @@
 import * as core from '@actions/core';
+import isEqual from 'lodash/isEqual';
 import { exec } from '@actions/exec';
 import {
   loadFirebaseJson,
@@ -66,9 +67,16 @@ export async function run(): Promise<void> {
         )}`,
       );
       core.info('Successfully checked for changes in top level files');
-      if (topLevelFilesChanged) {
+      const cachedFirebaseJson = await loadFirebaseJson(localCacheFolder);
+      const functionsConfigsChanged =
+        firebaseJson?.functions &&
+        !isEqual(firebaseJson.functions, cachedFirebaseJson.functions);
+      if (topLevelFilesChanged || functionsConfigsChanged) {
         deployArgs.push('functions', '--force');
-        core.info('Global files changed, deploying all functions');
+        const message = topLevelFilesChanged
+          ? 'Global files changed'
+          : 'firebase.json functions settings changed';
+        core.info(`${message}, deploying all functions`);
       } else {
         core.info('No global files changed in functions');
       }

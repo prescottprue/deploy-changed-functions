@@ -15,11 +15,15 @@ interface FirebaseJson {
 
 /**
  * Load firebase.json from root of project
+ * @param parentPath
  * @returns {object} Contents of firebase.json
  */
-export async function loadFirebaseJson(): Promise<FirebaseJson> {
-  const { GITHUB_WORKSPACE } = process.env;
-  const firebaseJsonPath = `${GITHUB_WORKSPACE}/firebase.json`;
+export async function loadFirebaseJson(
+  parentPath?: string,
+): Promise<FirebaseJson> {
+  const firebaseJsonPath = `${
+    parentPath || process.env.GITHUB_WORKSPACE
+  }/firebase.json`;
   if (!existsSync(firebaseJsonPath)) {
     core.warning(`firebase.json not found at path: "${firebaseJsonPath}"`);
     return {};
