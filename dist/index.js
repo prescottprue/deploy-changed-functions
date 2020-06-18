@@ -953,21 +953,7 @@ class ExecState extends events.EventEmitter {
 
 /***/ }),
 
-/***/ 87:
-/***/ (function(module) {
-
-module.exports = require("os");
-
-/***/ }),
-
-/***/ 129:
-/***/ (function(module) {
-
-module.exports = require("child_process");
-
-/***/ }),
-
-/***/ 325:
+/***/ 49:
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
 "use strict";
@@ -1000,16 +986,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.run = void 0;
+exports.createLocalCacheFolder = exports.loadFirebaseJson = exports.downloadCache = exports.writeCache = exports.checkForDiff = void 0;
 const core = __importStar(__webpack_require__(470));
 const exec_1 = __webpack_require__(986);
 const io_1 = __webpack_require__(1);
 const fs_1 = __webpack_require__(747);
-const path_1 = __importDefault(__webpack_require__(622));
 // -m - parallelize on multiple "machines" (i.e. processes)
 // -q - quiet
 const gsutilDefaultArgs = ['-m', '-q'];
@@ -1066,6 +1048,7 @@ function checkForDiff(listOfFilesToDiff, options) {
         }
     });
 }
+exports.checkForDiff = checkForDiff;
 /**
  * @param filesToUpload - List of files paths to upload
  * @param settings - Settings object
@@ -1093,6 +1076,7 @@ function writeCache(filesToUpload, settings) {
         }
     });
 }
+exports.writeCache = writeCache;
 /**
  * @param cacheFolder - Cache folder
  * @param settings - Settings object
@@ -1111,6 +1095,7 @@ function downloadCache(cacheFolder, settings) {
         }
     });
 }
+exports.downloadCache = downloadCache;
 /**
  * Load firebase.json from root of project
  * @returns {object} Contents of firebase.json
@@ -1139,6 +1124,7 @@ function loadFirebaseJson() {
         }
     });
 }
+exports.loadFirebaseJson = loadFirebaseJson;
 /**
  * @param localFolder - Local cache folder path
  */
@@ -1153,6 +1139,111 @@ function createLocalCacheFolder(localFolder) {
         }
     });
 }
+exports.createLocalCacheFolder = createLocalCacheFolder;
+
+
+/***/ }),
+
+/***/ 87:
+/***/ (function(module) {
+
+module.exports = require("os");
+
+/***/ }),
+
+/***/ 129:
+/***/ (function(module) {
+
+module.exports = require("child_process");
+
+/***/ }),
+
+/***/ 163:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.onlyChangedFunctions = exports.createLocalCacheFolder = exports.loadFirebaseJson = void 0;
+const core = __importStar(__webpack_require__(470));
+const io_1 = __webpack_require__(1);
+const fs_1 = __webpack_require__(747);
+const path_1 = __importDefault(__webpack_require__(622));
+/**
+ * Load firebase.json from root of project
+ * @returns {object} Contents of firebase.json
+ */
+function loadFirebaseJson() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const { GITHUB_WORKSPACE } = process.env;
+        const firebaseJsonPath = `${GITHUB_WORKSPACE}/firebase.json`;
+        if (!fs_1.existsSync(firebaseJsonPath)) {
+            core.warning(`firebase.json not found at path: "${firebaseJsonPath}"`);
+            return {};
+        }
+        let firebaseJsonStr;
+        try {
+            const firebaseJsonBuffer = yield fs_1.promises.readFile(firebaseJsonPath);
+            firebaseJsonStr = firebaseJsonBuffer.toString();
+        }
+        catch (err) {
+            throw new Error('Error loading firebase.json');
+        }
+        try {
+            return JSON.parse(firebaseJsonStr);
+        }
+        catch (err) {
+            throw new Error('Error parsing firebase.json, confirm it is valid JSON');
+        }
+    });
+}
+exports.loadFirebaseJson = loadFirebaseJson;
+/**
+ * @param localFolder - Local cache folder path
+ */
+function createLocalCacheFolder(localFolder) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            // Create local folder for cache
+            yield io_1.mkdirP(localFolder);
+        }
+        catch (error) {
+            throw new Error(`Error creating local cache folder: ${error}`);
+        }
+    });
+}
+exports.createLocalCacheFolder = createLocalCacheFolder;
 /**
  * @param changedFiles - List of changed files
  * @returns List of changed functions
@@ -1180,8 +1271,52 @@ function onlyChangedFunctions(changedFiles) {
         .join(',');
     return functionsStrings;
 }
+exports.onlyChangedFunctions = onlyChangedFunctions;
+
+
+/***/ }),
+
+/***/ 325:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.run = void 0;
+const core = __importStar(__webpack_require__(470));
+const exec_1 = __webpack_require__(986);
+const utils_1 = __webpack_require__(163);
+const actions_1 = __webpack_require__(49);
 /**
- *
+ * Run deploy-changed-functions logic
  */
 function run() {
     var _a;
@@ -1199,24 +1334,25 @@ function run() {
         try {
             // Create local folder for cache
             const localCacheFolder = `${GITHUB_WORKSPACE}/${localFolder}`;
-            yield createLocalCacheFolder(localCacheFolder);
+            yield utils_1.createLocalCacheFolder(localCacheFolder);
             core.info(`Created local cache folder "${localCacheFolder}"`);
             // Load functions settings from firebase.json
-            const firebaseJson = yield loadFirebaseJson();
+            const firebaseJson = yield utils_1.loadFirebaseJson();
             core.info('Successfully loaded firebase.json');
             const functionsFolderWithoutPrefix = ((_a = firebaseJson.functions) === null || _a === void 0 ? void 0 : _a.source) || core.getInput('functions-folder');
             const functionsFolder = `${GITHUB_WORKSPACE}/${functionsFolderWithoutPrefix}`;
             // Download Functions cache from Cloud Storage
-            yield downloadCache(cacheFolder, { localCacheFolder, storageBaseUrl });
+            yield actions_1.downloadCache(cacheFolder, { localCacheFolder, storageBaseUrl });
             // TODO: Handle error downloading due to folder not existing
             core.info('Successfully downloaded functions cache');
+            // const globber = await glob.create(`${functionsFolder}/*`);
             // TODO: Use all files which are not ignored in functions folder as globals
             const topLevelFilesInput = core.getInput('global-paths');
             const topLevelFilesToCheck = (topLevelFilesInput === null || topLevelFilesInput === void 0 ? void 0 : topLevelFilesInput.split(',').filter(Boolean)) || [];
             const deployArgs = ['deploy', '--only'];
             // Check for changes in top level files
             if (topLevelFilesToCheck === null || topLevelFilesToCheck === void 0 ? void 0 : topLevelFilesToCheck.length) {
-                const listOfChangedTopLevelFiles = yield checkForDiff(topLevelFilesToCheck, {
+                const listOfChangedTopLevelFiles = yield actions_1.checkForDiff(topLevelFilesToCheck, {
                     localCacheFolder: `${localCacheFolder}/${folderSuffix}`,
                     functionsFolder,
                 });
@@ -1238,20 +1374,21 @@ function run() {
             core.info('Checking for changes in src folder');
             // Check for change in files within src folder
             // TODO: Switch this to checking dist so that babel config is handled
-            const listOfChangedFiles = yield checkForDiff(['src'], {
+            const listOfChangedFiles = yield actions_1.checkForDiff(['src'], {
                 localCacheFolder: `${localCacheFolder}/${folderSuffix}`,
                 functionsFolder,
             });
             core.info(`List of changed source files: ${listOfChangedFiles.join('\n')}`);
-            const changedFunctionsOnlyCommand = onlyChangedFunctions(listOfChangedFiles);
+            const changedFunctionsOnlyCommand = utils_1.onlyChangedFunctions(listOfChangedFiles);
             if (changedFunctionsOnlyCommand === null || changedFunctionsOnlyCommand === void 0 ? void 0 : changedFunctionsOnlyCommand.length) {
                 deployArgs.push(changedFunctionsOnlyCommand);
             }
             else {
                 core.info('No functions source code changed');
             }
+            // TODO: Handle deleting of functions during update by checking if folder exists in src/dist
             if ((deployArgs === null || deployArgs === void 0 ? void 0 : deployArgs.length) > 2) {
-                core.info(`Would be calling deploy with args: ${deployArgs.join(' ')}`);
+                core.info(`Calling deploy with args: ${deployArgs.join(' ')}`);
                 const token = core.getInput('token');
                 // Exit if token is missing
                 if (!token && !process.env.FIREBASE_TOKEN) {
@@ -1259,11 +1396,28 @@ function run() {
                 }
                 // Add deploy token to arguments
                 deployArgs.push('--token', process.env.FIREBASE_TOKEN || token);
-                // Call deploy command
-                yield exec_1.exec('firebase', deployArgs.concat(['--project', projectId]));
+                let deployCommandOutput = '';
+                // Call deploy command with listener for output
+                const options = {
+                    listeners: {
+                        stdout: (data) => {
+                            deployCommandOutput += data.toString();
+                        },
+                    },
+                };
+                const deployExitCode = yield exec_1.exec('firebase', deployArgs.concat(['--project', projectId]), options);
+                // Attempt redeploy if exit code is not 0
+                if (deployExitCode) {
+                    core.info(`Deploy failed, attempting to parse redeploy message from output`);
+                    if (deployCommandOutput) {
+                        const searchResults = /To try redeploying those functions, run:\n\s*firebase\s(.*)/g.exec(deployCommandOutput);
+                        const newDeployCommand = searchResults && searchResults[1];
+                        yield exec_1.exec('firebase', newDeployCommand === null || newDeployCommand === void 0 ? void 0 : newDeployCommand.split(' '));
+                    }
+                }
             }
             // Re-upload files to cache
-            yield writeCache(topLevelFilesToCheck, { functionsFolder, storageBaseUrl });
+            yield actions_1.writeCache(topLevelFilesToCheck, { functionsFolder, storageBaseUrl });
         }
         catch (error) {
             core.setFailed(error.message);
