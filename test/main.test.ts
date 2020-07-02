@@ -1,40 +1,21 @@
 import * as core from '@actions/core';
-// import { exec } from '@actions/exec';
+import * as exec from '@actions/exec';
+import * as io from '@actions/io';
 import run from '../src/main';
 
 jest.mock('@actions/core', () => ({
-  getInput: jest.fn((inputName) => {
-    if (inputName === 'cache-folder') {
-      return 'some/asdf';
-    }
-    if (inputName === 'local-folder') {
-      return 'local/folder';
-    }
-    if (inputName === 'functions-folder') {
-      return 'functions';
-    }
-  }),
+  getInput: jest.fn(),
   setFailed: jest.fn(),
   warning: jest.fn(),
   info: jest.fn(),
 }));
 
+jest.mock('@actions/io', () => ({
+  mkdirP: jest.fn(() => Promise.resolve(0)),
+}));
+
 jest.mock('@actions/exec', () => ({
   exec: jest.fn(() => Promise.resolve(0)),
-  // exec: async (command: string, commandArgs: string[]) => {
-  //   if (command === 'gsutil') {
-  //     return 0;
-  //   }
-  //   return new Promise((resolve, reject) => {
-  //     exec(`${command} ${commandArgs.join(' ')}`, (error) => {
-  //       if (error) {
-  //         reject(error);
-  //       } else {
-  //         resolve();
-  //       }
-  //     });
-  //   });
-  // },
 }));
 
 describe('run function', () => {
@@ -42,12 +23,12 @@ describe('run function', () => {
     jest.resetAllMocks();
   });
 
-  it('Should throw if GITHUB_WORKSPACE is not set', async () => {
+  it('Throws if GITHUB_WORKSPACE is not set', async () => {
     await run();
     expect(core.setFailed).toHaveBeenCalledWith('Missing GITHUB_WORKSPACE!');
   });
 
-  it('Should throw if project_id input is not set', async () => {
+  it('Throws if project-id input is not set', async () => {
     process.env.GITHUB_WORKSPACE = process.cwd();
     await run();
     expect(core.setFailed).toHaveBeenCalledWith(
@@ -55,11 +36,31 @@ describe('run function', () => {
     );
   });
 
-  it('Fails if ', async () => {
-    process.env.GITHUB_WORKSPACE = `${process.cwd()}`;
+  it('Calls gsutil to download functions cache from cloud storage to local folder', async () => {
+    const cwd = process.cwd();
+    process.env.GITHUB_WORKSPACE = cwd;
+    const projectName = 'someProject';
+    // Mock getInput to pass project-id input
+    (core.getInput as jest.Mock).mockImplementation((inputName: string) => {
+      if (inputName === 'project-id') {
+        return projectName;
+      }
+      return null;
+    });
+
     await run();
-    expect(core.info).toHaveBeenCalledWith(
-      expect.stringContaining('Error checking for diff for path "src"'),
-    );
+    const localCacheFolderPath = `${cwd}/local_functions_cache`;
+    // Confirm that local folder is created
+    expect(io.mkdirP).toHaveBeenCalledWith(localCacheFolderPath);
+
+    // Confirm that exec is called with gsutil and correct arguments
+    expect(exec.exec).toHaveBeenCalledWith('gsutil', [
+      '-m',
+      '-q',
+      'cp',
+      '-r',
+      `gs://${projectName}.appspot.com/functions_deploy_cache`,
+      `${localCacheFolderPath}/`,
+    ]);
   });
 });

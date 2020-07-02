@@ -31,17 +31,14 @@ jobs:
       - name: Install Dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Install Dependencies
-        run: npm ci
-
       - name: Check For Lint
-        run: npm run lint
+        run: yarn lint
 
       - name: Run Unit Tests + Coverage
-        run: npm run test:cov
+        run: yarn test:cov
 
       - name: Run Build
-        run: npm run build
+        run: yarn build
 
       - name: Upload Test Coverage
         uses: codecov/codecov-action@v1
