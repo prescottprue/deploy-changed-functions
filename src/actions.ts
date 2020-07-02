@@ -1,7 +1,9 @@
 import * as core from '@actions/core';
+import isEqual from 'lodash/isEqual';
 import { exec } from '@actions/exec';
 import { mkdirP } from '@actions/io';
 import { promises as fs, existsSync } from 'fs';
+import { loadFirebaseJson } from './utils';
 
 // -m - parallelize on multiple "machines" (i.e. processes)
 // -q - quiet
@@ -25,54 +27,111 @@ export async function checkForDiff(
   // Check for change in files
   // TODO: Load ignore settings from functions.ignore of firebase.json
   // TODO: Include changes to firebase.json
-  try {
-    core.info(
-      `Diffing files between paths: "${functionsFolder}" and "${localCacheFolder}"`,
-    );
-    // TODO: Look into piping a list of files into diff to get a single diff result
-    const pathsToIgnoreInput: string = core.getInput('ignore');
-    const pathsToIgnore: string[] = pathsToIgnoreInput?.split(',') || [];
-    const resultsFromMultipleDiffs = await Promise.all(
-      listOfFilesToDiff.map(async (topLevelPath) => {
-        let diffResultsBeforeTrim = '';
-        const options = {
-          listeners: {
-            stdout: (data: Buffer) => {
-              diffResultsBeforeTrim += data.toString();
-            },
+  core.info(
+    `Diffing files between paths: "${functionsFolder}" and "${localCacheFolder}"`,
+  );
+  // TODO: Look into piping a list of files into diff to get a single diff result
+  const pathsToIgnoreInput: string = core.getInput('ignore');
+  const pathsToIgnore: string[] = pathsToIgnoreInput?.split(',') || [];
+  const resultsFromMultipleDiffs = await Promise.all(
+    listOfFilesToDiff.map(async (topLevelPath) => {
+      let diffResultsBeforeTrim = '';
+      const options = {
+        listeners: {
+          stdout: (data: Buffer) => {
+            diffResultsBeforeTrim += data.toString();
           },
-        };
-        // TODO: only ignore files when pointing to a folder
-        // Ignore files based on settings
-        const diffBaseArgs = ['-Nqr', '-w', '-B'];
-        if (pathsToIgnore?.length) {
-          pathsToIgnore.forEach((globToIgnore) => {
-            diffBaseArgs.push('-x', globToIgnore);
-          });
-        }
-        try {
-          await exec(
-            'diff',
-            diffBaseArgs.concat([
-              `${functionsFolder}/${topLevelPath}`,
-              `${localCacheFolder}/${topLevelPath}`,
-            ]),
-            options,
-          );
-        } catch (error) {
-          throw new Error(
-            `Error checking for diff for file "${topLevelPath}": ${error.message}`,
-          );
-        }
-        return diffResultsBeforeTrim;
-      }),
+        },
+      };
+      // TODO: only ignore files when pointing to a folder
+      // Ignore files based on settings
+      const diffBaseArgs = ['-Nqr', '-w', '-B'];
+      if (pathsToIgnore?.length) {
+        pathsToIgnore.forEach((globToIgnore) => {
+          diffBaseArgs.push('-x', globToIgnore);
+        });
+      }
+      try {
+        // Run diff command to check for differences between cache and local code
+        await exec(
+          'diff',
+          diffBaseArgs.concat([
+            `${functionsFolder}/${topLevelPath}`,
+            `${localCacheFolder}/${topLevelPath}`,
+          ]),
+          options,
+        );
+      } catch (error) {
+        throw new Error(
+          `Error checking for diff for path "${topLevelPath}": ${error.message}`,
+        );
+      }
+      return diffResultsBeforeTrim;
+    }),
+  );
+  // TODO: Improve filtering to match awk
+  return resultsFromMultipleDiffs;
+}
+
+interface CheckTopLevelChangesSettings {
+  localCacheFolder: string;
+  functionsFolder: string;
+  firebaseJson?: FirebaseJson;
+}
+
+/**
+ * @param topLevelFilesToCheck - List of files to check
+ * @param settings - Settings
+ * @returns List of files that changed
+ */
+export async function checkForTopLevelChanges(
+  topLevelFilesToCheck: string[],
+  settings: CheckTopLevelChangesSettings,
+): Promise<boolean> {
+  const { localCacheFolder, firebaseJson, functionsFolder } = settings;
+  // TODO: Use all files which are not ignored in functions folder as globals
+
+  // Check functions settings in firebase.json
+  if (firebaseJson) {
+    core.info('Checking for changes in firebase.json');
+    const cachedFirebaseJson = await loadFirebaseJson(localCacheFolder);
+    const functionsConfigsChanged = !isEqual(
+      firebaseJson?.functions,
+      cachedFirebaseJson?.functions,
     );
-    // TODO: Improve filtering to match awk
-    return resultsFromMultipleDiffs;
-  } catch (error) {
-    // TODO: Handle error downloading due to folder not existing
-    throw new Error(`Error checking for file diff: ${error.message}`);
+    if (functionsConfigsChanged) {
+      core.info(
+        'firebase.json functions settings changed, deploying all functions',
+      );
+      return true;
+    }
   }
+
+  // Check for changes in global files
+  if (topLevelFilesToCheck?.length) {
+    const listOfChangedTopLevelFiles = await checkForDiff(
+      topLevelFilesToCheck,
+      {
+        localCacheFolder,
+        functionsFolder,
+      },
+    );
+    const topLevelFilesChanged = !!listOfChangedTopLevelFiles.filter(Boolean)
+      .length;
+    core.info(
+      `List of changed top level files: ${listOfChangedTopLevelFiles.join(
+        '\n',
+      )}`,
+    );
+    if (topLevelFilesChanged) {
+      core.info(`Global files changed, deploying all functions`);
+      return true;
+    }
+    core.info('No global files changed in functions');
+  } else {
+    core.info('No global files to check');
+  }
+  return false;
 }
 
 interface WriteCacheSettings {
@@ -94,7 +153,10 @@ export async function writeCache(
   try {
     await Promise.all(
       filesToUpload.map(async (topLevelPath) => {
-        const stat = await fs.lstat(`${process.cwd()}/${topLevelPath}`);
+        if (!existsSync(topLevelPath)) {
+          return null;
+        }
+        const stat = await fs.lstat(topLevelPath);
         const copyArgs = gsutilDefaultArgs.concat(['cp']);
         const isDirectory = stat.isDirectory();
         if (isDirectory) {
@@ -151,31 +213,6 @@ interface FunctionsFirebaseSetting {
 
 interface FirebaseJson {
   functions?: FunctionsFirebaseSetting;
-}
-
-/**
- * Load firebase.json from root of project
- * @returns {object} Contents of firebase.json
- */
-export async function loadFirebaseJson(): Promise<FirebaseJson> {
-  const { GITHUB_WORKSPACE } = process.env;
-  const firebaseJsonPath = `${GITHUB_WORKSPACE}/firebase.json`;
-  if (!existsSync(firebaseJsonPath)) {
-    core.warning(`firebase.json not found at path: "${firebaseJsonPath}"`);
-    return {};
-  }
-  let firebaseJsonStr: string;
-  try {
-    const firebaseJsonBuffer = await fs.readFile(firebaseJsonPath);
-    firebaseJsonStr = firebaseJsonBuffer.toString();
-  } catch (err) {
-    throw new Error('Error loading firebase.json');
-  }
-  try {
-    return JSON.parse(firebaseJsonStr);
-  } catch (err) {
-    throw new Error('Error parsing firebase.json, confirm it is valid JSON');
-  }
 }
 
 /**
