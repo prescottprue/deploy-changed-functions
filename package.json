@@ -1,6 +1,6 @@
 {
   "name": "deploy-changed-functions",
-  "version": "0.0.1",
+  "version": "0.0.0-development",
   "description": "Deploy only Cloud Functions which have changed",
   "main": "dist/index.js",
   "scripts": {
@@ -19,6 +19,8 @@
   },
   "devDependencies": {
     "@babel/preset-typescript": "^7.10.1",
+    "@commitlint/cli": "^9.0.1",
+    "@commitlint/config-conventional": "^9.0.1",
     "@types/jest": "^26.0.0",
     "@types/lodash": "^4.14.155",
     "@types/node": "^14.0.13",
@@ -57,7 +59,8 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "npm run lint && npm run build && git add ."
+      "pre-commit": "npm run lint && npm run build && git add .",
+      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
     }
   }
 }

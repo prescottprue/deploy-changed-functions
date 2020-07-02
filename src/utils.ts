@@ -1,7 +1,6 @@
 import * as core from '@actions/core';
 import { mkdirP } from '@actions/io';
 import { promises as fs, existsSync } from 'fs';
-import path from 'path';
 
 interface FunctionsFirebaseSetting {
   source?: string;
@@ -9,25 +8,26 @@ interface FunctionsFirebaseSetting {
   predeploy?: string[];
 }
 
-interface FirebaseJson {
+export interface FirebaseJson {
   functions?: FunctionsFirebaseSetting;
 }
 
 /**
  * Load firebase.json from root of project
- * @param parentPath
+ * @param parentPath - Parent path of firebase.json (defaults to GITHUB_WORKSPACE)
  * @returns {object} Contents of firebase.json
  */
 export async function loadFirebaseJson(
   parentPath?: string,
-): Promise<FirebaseJson> {
+): Promise<FirebaseJson | undefined> {
   const firebaseJsonPath = `${
     parentPath || process.env.GITHUB_WORKSPACE
   }/firebase.json`;
   if (!existsSync(firebaseJsonPath)) {
     core.warning(`firebase.json not found at path: "${firebaseJsonPath}"`);
-    return {};
+    return undefined;
   }
+
   let firebaseJsonStr: string;
   try {
     const firebaseJsonBuffer = await fs.readFile(firebaseJsonPath);
@@ -64,10 +64,18 @@ export function onlyChangedFunctions(changedFiles: string[]): string | null {
   // TODO: Filter list of changed files
   const inputLines = changedFiles.filter(Boolean);
   const foldersToIgnore = ['utils', 'constants'];
-
-  const inputPathNames = inputLines.map((currentFilePath) =>
-    path.basename(path.dirname(currentFilePath)),
-  );
+  // Convert full file paths to folder paths. Handles nested files/folders including:
+  // src/adminApi/routes/teams/db.js
+  // src/adminApi/routes/index.js
+  // src/shortenUrl/index.js
+  const srcFolderRegex = new RegExp(/src\/([a-zA-Z]*)\//);
+  const inputPathNames = inputLines.map((currentFilePath) => {
+    const results = srcFolderRegex.exec(currentFilePath);
+    if (!results?.length) {
+      throw new Error('No regex results when scanning for src path');
+    }
+    return results[1];
+  });
   const inputIncludesIgnoredPaths = inputPathNames.find((pathName) =>
     foldersToIgnore.includes(pathName),
   );

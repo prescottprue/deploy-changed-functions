@@ -1,19 +1,16 @@
 name: 'Deploy Only Changed'
 description: 'Greet someone and record the time'
 inputs:
-  project_id:
+  project-id:
     description: 'ID of Google Cloud Project'
     required: true
-    default: 'World'
   token:
-    description: 'Firebase CI token (used for deploy call)'
-    required: true
-    default: 'World'
+    description: 'Firebase CI token (used for deploy call).'
   functions-folder:
     description: 'Folder where functions live'
     default: 'functions'
   ignore:
-    description: 'Globs to ignore in diffing'
+    description: 'Globs to ignore in diffing (i.e *.test.js)'
     default: 'functions'
   cache-folder:
     description: 'Folder to use for cache'
