@@ -1,4 +1,4 @@
-import { info, getInput, setFailed } from '@actions/core';
+import { info, getInput, setFailed, addPath } from '@actions/core';
 import { promises as fs } from 'fs';
 import { exec } from '@actions/exec';
 import {
@@ -112,7 +112,7 @@ export default async function run(): Promise<void> {
         );
       } else {
         info(`Calling deploy with args: ${deployArgs.join(' ')}`);
-        const firebaseCommand = `firebase`;
+        // const firebaseCommand = `firebase`;
         const firebaseBinaryPath = `${GITHUB_WORKSPACE}/firebase_bin`;
         info(`Downloading firebase binary`);
         await exec('curl', [
@@ -120,12 +120,11 @@ export default async function run(): Promise<void> {
           firebaseBinaryPath,
           'https://firebase.tools/bin/linux/v7.2.2',
         ]);
-        info(`Downloaded firebase binary`);
-        const fbToolsBuffer = await fs.readFile(firebaseBinaryPath);
-        info(`Loaded buffer of fb tools binary, calling in bash`);
-
-        await exec('bash', [], { input: fbToolsBuffer });
-        info(`Bash executed firebase-tools binary`);
+        info(`Downloaded firebase binary, making executable`);
+        await exec('chmod', ['+x', firebaseBinaryPath]);
+        info(`Chmod successful, adding to path`);
+        addPath(firebaseBinaryPath);
+        info(`Added to path`);
         // const firebasePath = `${GITHUB_WORKSPACE}/node_modules/.bin/firebase`;
         // addPath(firebasePath);
         // info(`Firebase path loaded: ${firebasePath}`);
@@ -136,7 +135,7 @@ export default async function run(): Promise<void> {
         // Call deploy command with listener for output (so that in case of failure,
         // it can be parsed for a list of functions which must be re-deployed)
         const deployExitCode = await exec(
-          firebaseCommand,
+          firebaseBinaryPath,
           [...deployArgs, '--project', projectId],
           {
             listeners: {
@@ -166,7 +165,7 @@ export default async function run(): Promise<void> {
             const newDeployCommand = searchResults && searchResults[1];
             let secondDeployOutput = '';
             const secondDeployExitCode = await exec(
-              firebaseCommand,
+              firebaseBinaryPath,
               [...(newDeployCommand?.split(' ') || [])],
               {
                 listeners: {
