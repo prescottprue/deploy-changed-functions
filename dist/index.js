@@ -1692,21 +1692,20 @@ function run() {
                 localCacheFolder: `${localCacheFolder}/${folderSuffix}`,
                 functionsFolder,
             });
-            core_1.info(`List of changed function files: ${listOfChangedFiles.join('\n')}`);
             const changedFunctionsOnlyCommand = utils_1.onlyChangedFunctions(listOfChangedFiles);
             // TODO: Handle deleting of functions during update by checking if folder exists in src/dist
             // Add list of changed functions to deploy command (i.e. functions:myFunc)
             if (changedFunctionsOnlyCommand === null || changedFunctionsOnlyCommand === void 0 ? void 0 : changedFunctionsOnlyCommand.length) {
+                core_1.info(`List of changed function files: ${listOfChangedFiles.join('\n')}`);
                 deployArgs.push(changedFunctionsOnlyCommand);
             }
             else {
                 core_1.info('No functions source code changed');
             }
             if ((deployArgs === null || deployArgs === void 0 ? void 0 : deployArgs.length) > 2) {
-                const skipDeploy = Boolean(core_1.getInput('skip-deploy'));
-                if (skipDeploy) {
-                    core_1.info(`Skipping deploy set to "${skipDeploy}"`);
-                    core_1.info(`Skipping deploy, would be using deploy command "firebase ${deployArgs.join(' ')}"`);
+                const skipDeploy = core_1.getInput('skip-deploy');
+                if (skipDeploy === 'true') {
+                    core_1.info(`Skipping deploy, deploy command would be "firebase ${deployArgs.join(' ')}"`);
                 }
                 else {
                     core_1.info(`Calling deploy with args: ${deployArgs.join(' ')}`);
