@@ -52,7 +52,7 @@ describe('run function', () => {
     // Confirm that exec is called with gsutil and correct arguments
     expect(exec).toHaveBeenCalledWith('gsutil', [
       '-m',
-      '-q',
+      // '-q',
       'cp',
       '-r',
       `gs://${projectName}.appspot.com/functions_deploy_cache`,

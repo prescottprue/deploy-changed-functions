@@ -141,7 +141,24 @@ export default async function run(): Promise<void> {
               deployCommandOutput,
             );
             const newDeployCommand = searchResults && searchResults[1];
-            await exec(firebaseToolsPath, newDeployCommand?.split(' '));
+            let secondDeployOutput = '';
+            const secondDeployExitCode = await exec(
+              firebaseToolsPath,
+              newDeployCommand?.split(' '),
+              {
+                listeners: {
+                  stdout: (data: Buffer) => {
+                    secondDeployOutput += data.toString();
+                  },
+                },
+                env: {
+                  FIREBASE_TOKEN: firebaseCiToken,
+                },
+              },
+            );
+            if (secondDeployExitCode) {
+              setFailed(`Redeploying failed:\n ${secondDeployOutput}`);
+            }
           }
         }
       }
@@ -149,10 +166,12 @@ export default async function run(): Promise<void> {
 
     // Re-upload files to cache
     const listOfFilesToUpload = [...topLevelFilesToCheck, 'src'];
-    if (firebaseJson) {
-      listOfFilesToUpload.push('firebase.json');
-    }
-    await writeCache(listOfFilesToUpload, { functionsFolder, storageBaseUrl });
+
+    await writeCache(listOfFilesToUpload, {
+      functionsFolder,
+      storagePath: `${storageBaseUrl}/${cacheFolder}`,
+      firebaseJson,
+    });
   } catch (error) {
     setFailed(error.message);
   }

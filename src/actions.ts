@@ -7,7 +7,7 @@ import { loadFirebaseJson } from './utils';
 
 // -m - parallelize on multiple "machines" (i.e. processes)
 // -q - quiet
-const gsutilDefaultArgs = ['-m', '-q'];
+const gsutilDefaultArgs = ['-m'];
 
 interface DiffOptions {
   functionsFolder: string;
@@ -134,7 +134,8 @@ export async function checkForTopLevelChanges(
 
 interface WriteCacheSettings {
   functionsFolder: string;
-  storageBaseUrl: string;
+  storagePath: string;
+  firebaseJson: FirebaseJson | undefined;
 }
 
 /**
@@ -145,9 +146,26 @@ export async function writeCache(
   filesToUpload: string[],
   settings: WriteCacheSettings,
 ): Promise<any> {
-  const { functionsFolder, storageBaseUrl } = settings;
+  const { functionsFolder, storagePath } = settings;
+  const copyArgs = gsutilDefaultArgs.concat(['cp']);
+
+  // Upload firebase.json if it exists locally
+  if (settings?.firebaseJson) {
+    try {
+      await exec(
+        'gsutil',
+        copyArgs.concat([
+          `${process.env.GITHUB_WORKSPACE}/firebase.json`,
+          `${storagePath}/firebase.json`,
+        ]),
+      );
+    } catch (error) {
+      throw new Error(`Error uploading functions cache: ${error.message}`);
+    }
+  }
 
   // TODO: Look into creating a list of files and piping them to the stdin of gsutil
+  // Upload all other files
   try {
     await Promise.all(
       filesToUpload.map(async (topLevelPath) => {
@@ -155,7 +173,6 @@ export async function writeCache(
           return null;
         }
         const stat = await fs.lstat(topLevelPath);
-        const copyArgs = gsutilDefaultArgs.concat(['cp']);
         const isDirectory = stat.isDirectory();
         if (isDirectory) {
           copyArgs.push('-r');
@@ -165,7 +182,7 @@ export async function writeCache(
           'gsutil',
           copyArgs.concat([
             `${functionsFolder}/${topLevelPath}`,
-            `${storageBaseUrl}/${isDirectory ? '' : topLevelPath}`,
+            `${storagePath}/${isDirectory ? '' : topLevelPath}`,
           ]),
         );
       }),

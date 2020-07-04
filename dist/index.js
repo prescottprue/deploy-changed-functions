@@ -1072,7 +1072,7 @@ const fs_1 = __webpack_require__(747);
 const utils_1 = __webpack_require__(163);
 // -m - parallelize on multiple "machines" (i.e. processes)
 // -q - quiet
-const gsutilDefaultArgs = ['-m', '-q'];
+const gsutilDefaultArgs = ['-m'];
 /**
  * @param listOfFilesToDiff - List of files to diff
  * @param options - Options object
@@ -1169,22 +1169,35 @@ exports.checkForTopLevelChanges = checkForTopLevelChanges;
  */
 function writeCache(filesToUpload, settings) {
     return __awaiter(this, void 0, void 0, function* () {
-        const { functionsFolder, storageBaseUrl } = settings;
+        const { functionsFolder, storagePath } = settings;
+        const copyArgs = gsutilDefaultArgs.concat(['cp']);
+        // Upload firebase.json if it exists locally
+        if (settings === null || settings === void 0 ? void 0 : settings.firebaseJson) {
+            try {
+                yield exec_1.exec('gsutil', copyArgs.concat([
+                    `${process.env.GITHUB_WORKSPACE}/firebase.json`,
+                    `${storagePath}/firebase.json`,
+                ]));
+            }
+            catch (error) {
+                throw new Error(`Error uploading functions cache: ${error.message}`);
+            }
+        }
         // TODO: Look into creating a list of files and piping them to the stdin of gsutil
+        // Upload all other files
         try {
             yield Promise.all(filesToUpload.map((topLevelPath) => __awaiter(this, void 0, void 0, function* () {
                 if (!fs_1.existsSync(topLevelPath)) {
                     return null;
                 }
                 const stat = yield fs_1.promises.lstat(topLevelPath);
-                const copyArgs = gsutilDefaultArgs.concat(['cp']);
                 const isDirectory = stat.isDirectory();
                 if (isDirectory) {
                     copyArgs.push('-r');
                 }
                 return exec_1.exec('gsutil', copyArgs.concat([
                     `${functionsFolder}/${topLevelPath}`,
-                    `${storageBaseUrl}/${isDirectory ? '' : topLevelPath}`,
+                    `${storagePath}/${isDirectory ? '' : topLevelPath}`,
                 ]));
             })));
         }
@@ -1715,17 +1728,31 @@ function run() {
                             // Get functions deploy commands from output of original deploy command
                             const searchResults = /To try redeploying those functions, run:\n\s*firebase\s(.*)/g.exec(deployCommandOutput);
                             const newDeployCommand = searchResults && searchResults[1];
-                            yield exec_1.exec(firebaseToolsPath, newDeployCommand === null || newDeployCommand === void 0 ? void 0 : newDeployCommand.split(' '));
+                            let secondDeployOutput = '';
+                            const secondDeployExitCode = yield exec_1.exec(firebaseToolsPath, newDeployCommand === null || newDeployCommand === void 0 ? void 0 : newDeployCommand.split(' '), {
+                                listeners: {
+                                    stdout: (data) => {
+                                        secondDeployOutput += data.toString();
+                                    },
+                                },
+                                env: {
+                                    FIREBASE_TOKEN: firebaseCiToken,
+                                },
+                            });
+                            if (secondDeployExitCode) {
+                                core_1.setFailed(`Redeploying failed:\n ${secondDeployOutput}`);
+                            }
                         }
                     }
                 }
             }
             // Re-upload files to cache
             const listOfFilesToUpload = [...topLevelFilesToCheck, 'src'];
-            if (firebaseJson) {
-                listOfFilesToUpload.push('firebase.json');
-            }
-            yield actions_1.writeCache(listOfFilesToUpload, { functionsFolder, storageBaseUrl });
+            yield actions_1.writeCache(listOfFilesToUpload, {
+                functionsFolder,
+                storagePath: `${storageBaseUrl}/${cacheFolder}`,
+                firebaseJson,
+            });
         }
         catch (error) {
             core_1.setFailed(error.message);
