@@ -1703,9 +1703,10 @@ function run() {
                 core_1.info('No functions source code changed');
             }
             if ((deployArgs === null || deployArgs === void 0 ? void 0 : deployArgs.length) > 2) {
-                const skipDeploy = core_1.getInput('skip-deploy');
+                const skipDeploy = Boolean(core_1.getInput('skip-deploy'));
                 if (skipDeploy) {
-                    core_1.info(`Skipping deploy, would be using args: ${deployArgs.join(' ')}`);
+                    core_1.info(`Skipping deploy set to "${skipDeploy}"`);
+                    core_1.info(`Skipping deploy, would be using deploy command "firebase ${deployArgs.join(' ')}"`);
                 }
                 else {
                     core_1.info(`Calling deploy with args: ${deployArgs.join(' ')}`);

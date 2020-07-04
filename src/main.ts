@@ -104,9 +104,14 @@ export default async function run(): Promise<void> {
     }
 
     if (deployArgs?.length > 2) {
-      const skipDeploy = getInput('skip-deploy');
+      const skipDeploy = Boolean(getInput('skip-deploy'));
       if (skipDeploy) {
-        info(`Skipping deploy, would be using args: ${deployArgs.join(' ')}`);
+        info(`Skipping deploy set to "${skipDeploy}"`);
+        info(
+          `Skipping deploy, would be using deploy command "firebase ${deployArgs.join(
+            ' ',
+          )}"`,
+        );
       } else {
         info(`Calling deploy with args: ${deployArgs.join(' ')}`);
         let deployCommandOutput = '';
