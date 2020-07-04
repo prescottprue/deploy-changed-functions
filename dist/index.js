@@ -1711,6 +1711,10 @@ function run() {
                     core_1.info(`Calling deploy with args: ${deployArgs.join(' ')}`);
                     let deployCommandOutput = '';
                     const firebaseToolsPath = yield io_1.which('firebase');
+                    // Exit if path not found to firebase command (provided by firebase-tools)
+                    if (!firebaseToolsPath) {
+                        core_1.setFailed('firebase command not found, make sure you have firebase-tools installed as a development dependency and that your node_modules are installed');
+                    }
                     // Call deploy command with listener for output (so that in case of failure,
                     // it can be parsed for a list of functions which must be re-deployed)
                     const deployExitCode = yield exec_1.exec(firebaseToolsPath, deployArgs.concat(['--project', projectId]), {
