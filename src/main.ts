@@ -1,6 +1,5 @@
-import { info, getInput, setFailed, addPath } from '@actions/core';
-import { homedir } from 'os';
-import { which } from '@actions/io';
+import { info, getInput, setFailed } from '@actions/core';
+import { promises as fs } from 'fs';
 import { exec } from '@actions/exec';
 import {
   loadFirebaseJson,
@@ -113,26 +112,31 @@ export default async function run(): Promise<void> {
         );
       } else {
         info(`Calling deploy with args: ${deployArgs.join(' ')}`);
-        // const firebaseCommand = `firebase`;
-        const firebasePath = `${GITHUB_WORKSPACE}/firebase_bin`;
+        const firebaseCommand = `firebase`;
+        const firebaseBinaryPath = `${GITHUB_WORKSPACE}/firebase_bin`;
         info(`Downloading firebase binary`);
         await exec('curl', [
           '-Lo',
-          firebasePath,
+          firebaseBinaryPath,
           'https://firebase.tools/bin/linux/v7.2.2',
         ]);
         info(`Downloaded firebase binary`);
+        const fbToolsBuffer = await fs.readFile(firebaseBinaryPath);
+        info(`Loaded buffer of fb tools binary, calling in bash`);
+
+        await exec('bash', [], { input: fbToolsBuffer });
+        info(`Bash executed firebase-tools binary`);
         // const firebasePath = `${GITHUB_WORKSPACE}/node_modules/.bin/firebase`;
-        addPath(firebasePath);
-        info(`Firebase path loaded: ${firebasePath}`);
-        const npxPath = await which('npx');
-        info(`npx path: ${npxPath}`);
+        // addPath(firebasePath);
+        // info(`Firebase path loaded: ${firebasePath}`);
+        // const npxPath = await which('npx');
+        // info(`npx path: ${npxPath}`);
         let deployCommandOutput = '';
         // const cwd = homedir();
         // Call deploy command with listener for output (so that in case of failure,
         // it can be parsed for a list of functions which must be re-deployed)
         const deployExitCode = await exec(
-          firebasePath,
+          firebaseCommand,
           [...deployArgs, '--project', projectId],
           {
             listeners: {
@@ -162,7 +166,7 @@ export default async function run(): Promise<void> {
             const newDeployCommand = searchResults && searchResults[1];
             let secondDeployOutput = '';
             const secondDeployExitCode = await exec(
-              firebasePath,
+              firebaseCommand,
               [...(newDeployCommand?.split(' ') || [])],
               {
                 listeners: {
