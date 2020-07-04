@@ -1629,6 +1629,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const core_1 = __webpack_require__(470);
+const os_1 = __webpack_require__(87);
+const io_1 = __webpack_require__(1);
 const exec_1 = __webpack_require__(986);
 const utils_1 = __webpack_require__(163);
 const actions_1 = __webpack_require__(49);
@@ -1707,8 +1709,13 @@ function run() {
                 }
                 else {
                     core_1.info(`Calling deploy with args: ${deployArgs.join(' ')}`);
-                    const firebaseCommand = '$(npm bin)/firebase';
+                    const firebaseCommand = `firebase`;
+                    const firebasePath = yield io_1.which('firebase');
+                    core_1.info(`Firebase path loaded: ${firebasePath}`);
+                    const npxPath = yield io_1.which('npx');
+                    core_1.info(`npx path: ${npxPath}`);
                     let deployCommandOutput = '';
+                    const cwd = os_1.homedir();
                     // Call deploy command with listener for output (so that in case of failure,
                     // it can be parsed for a list of functions which must be re-deployed)
                     const deployExitCode = yield exec_1.exec(firebaseCommand, [...deployArgs, '--project', projectId], {
@@ -1720,6 +1727,7 @@ function run() {
                         env: {
                             FIREBASE_TOKEN: firebaseCiToken,
                         },
+                        cwd,
                     });
                     // Attempt re-deploy if first deploy was not successful
                     // Command is parsed from stdout of initial deploy command
@@ -1739,6 +1747,7 @@ function run() {
                                 env: {
                                     FIREBASE_TOKEN: firebaseCiToken,
                                 },
+                                cwd,
                             });
                             if (secondDeployExitCode) {
                                 core_1.setFailed(`Redeploying failed:\n ${secondDeployOutput}`);

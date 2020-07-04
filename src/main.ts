@@ -1,4 +1,5 @@
-import { info, debug, getInput, setFailed } from '@actions/core';
+import { info, getInput, setFailed } from '@actions/core';
+import { homedir } from 'os';
 import { which } from '@actions/io';
 import { exec } from '@actions/exec';
 import {
@@ -112,9 +113,15 @@ export default async function run(): Promise<void> {
         );
       } else {
         info(`Calling deploy with args: ${deployArgs.join(' ')}`);
-        const firebaseCommand = '$(npm bin)/firebase';
+        const firebaseCommand = `firebase`;
 
+        const firebasePath = await which('firebase');
+
+        info(`Firebase path loaded: ${firebasePath}`);
+        const npxPath = await which('npx');
+        info(`npx path: ${npxPath}`);
         let deployCommandOutput = '';
+        const cwd = homedir();
         // Call deploy command with listener for output (so that in case of failure,
         // it can be parsed for a list of functions which must be re-deployed)
         const deployExitCode = await exec(
@@ -129,6 +136,7 @@ export default async function run(): Promise<void> {
             env: {
               FIREBASE_TOKEN: firebaseCiToken,
             },
+            cwd,
           },
         );
 
@@ -157,6 +165,7 @@ export default async function run(): Promise<void> {
                 env: {
                   FIREBASE_TOKEN: firebaseCiToken,
                 },
+                cwd,
               },
             );
             if (secondDeployExitCode) {
