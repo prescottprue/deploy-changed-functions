@@ -1710,6 +1710,7 @@ function run() {
                     core_1.info(`Calling deploy with args: ${deployArgs.join(' ')}`);
                     // const firebaseCommand = `firebase`;
                     const firebasePath = `${GITHUB_WORKSPACE}/node_modules/.bin/firebase`;
+                    core_1.addPath(firebasePath);
                     core_1.info(`Firebase path loaded: ${firebasePath}`);
                     const npxPath = yield io_1.which('npx');
                     core_1.info(`npx path: ${npxPath}`);
@@ -1726,6 +1727,7 @@ function run() {
                         env: {
                             FIREBASE_TOKEN: firebaseCiToken,
                         },
+                        failOnStdErr: false,
                         cwd: GITHUB_WORKSPACE,
                     });
                     // Attempt re-deploy if first deploy was not successful
@@ -1747,6 +1749,7 @@ function run() {
                                     FIREBASE_TOKEN: firebaseCiToken,
                                 },
                                 cwd: GITHUB_WORKSPACE,
+                                failOnStdErr: false,
                             });
                             if (secondDeployExitCode) {
                                 core_1.setFailed(`Redeploying failed:\n ${secondDeployOutput}`);

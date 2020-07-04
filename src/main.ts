@@ -1,4 +1,4 @@
-import { info, getInput, setFailed } from '@actions/core';
+import { info, getInput, setFailed, addPath } from '@actions/core';
 import { homedir } from 'os';
 import { which } from '@actions/io';
 import { exec } from '@actions/exec';
@@ -116,7 +116,7 @@ export default async function run(): Promise<void> {
         // const firebaseCommand = `firebase`;
 
         const firebasePath = `${GITHUB_WORKSPACE}/node_modules/.bin/firebase`;
-
+        addPath(firebasePath);
         info(`Firebase path loaded: ${firebasePath}`);
         const npxPath = await which('npx');
         info(`npx path: ${npxPath}`);
@@ -136,6 +136,7 @@ export default async function run(): Promise<void> {
             env: {
               FIREBASE_TOKEN: firebaseCiToken,
             },
+            failOnStdErr: false,
             cwd: GITHUB_WORKSPACE,
           },
         );
@@ -166,6 +167,7 @@ export default async function run(): Promise<void> {
                   FIREBASE_TOKEN: firebaseCiToken,
                 },
                 cwd: GITHUB_WORKSPACE,
+                failOnStdErr: false,
               },
             );
             if (secondDeployExitCode) {
