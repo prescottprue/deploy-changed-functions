@@ -1707,21 +1707,21 @@ function run() {
                 }
                 else {
                     core_1.info(`Calling deploy with args: ${deployArgs.join(' ')}`);
-                    // const firebaseCommand = `firebase`;
-                    const firebaseBinaryPath = `${GITHUB_WORKSPACE}/firebase_bin`;
-                    core_1.info(`Downloading firebase binary`);
-                    yield exec_1.exec('curl', [
-                        '-Lo',
-                        firebaseBinaryPath,
-                        'https://firebase.tools/bin/linux/v7.2.2',
-                    ]);
-                    core_1.info(`Downloaded firebase binary, making executable`);
-                    yield exec_1.exec('chmod', ['+x', firebaseBinaryPath]);
-                    core_1.info(`Chmod successful, adding to path`);
-                    const firstLsRes = yield exec_1.exec('ls', [GITHUB_WORKSPACE || '']);
-                    core_1.info(`ls: ${firstLsRes}`);
-                    const secondLsRes = yield exec_1.exec('ls', [firebaseBinaryPath]);
-                    core_1.info(`ls2: ${secondLsRes}`);
+                    const firebaseCommand = `firebase`;
+                    // const firebaseBinaryPath = `${GITHUB_WORKSPACE}/firebase_bin`;
+                    // info(`Downloading firebase binary`);
+                    // await exec('curl', [
+                    //   '-Lo',
+                    //   firebaseBinaryPath,
+                    //   'https://firebase.tools/bin/linux/v7.2.2',
+                    // ]);
+                    // info(`Downloaded firebase binary, making executable`);
+                    // await exec('chmod', ['+x', firebaseBinaryPath]);
+                    // info(`Chmod successful, adding to path`);
+                    // const firstLsRes = await exec('ls', [GITHUB_WORKSPACE || '']);
+                    // info(`ls: ${firstLsRes}`);
+                    // const secondLsRes = await exec('ls', [firebaseBinaryPath]);
+                    // info(`ls2: ${secondLsRes}`);
                     // addPath(firebaseBinaryPath);
                     // info(`Added to path`);
                     // const firebasePath = `${GITHUB_WORKSPACE}/node_modules/.bin/firebase`;
@@ -1733,7 +1733,7 @@ function run() {
                     // const cwd = homedir();
                     // Call deploy command with listener for output (so that in case of failure,
                     // it can be parsed for a list of functions which must be re-deployed)
-                    const deployExitCode = yield exec_1.exec(firebaseBinaryPath, [...deployArgs, '--project', projectId], {
+                    const deployExitCode = yield exec_1.exec(firebaseCommand, [...deployArgs, '--project', projectId], {
                         listeners: {
                             stdout: (data) => {
                                 deployCommandOutput += data.toString();
@@ -1754,7 +1754,7 @@ function run() {
                             const searchResults = /To try redeploying those functions, run:\n\s*firebase\s(.*)/g.exec(deployCommandOutput);
                             const newDeployCommand = searchResults && searchResults[1];
                             let secondDeployOutput = '';
-                            const secondDeployExitCode = yield exec_1.exec(firebaseBinaryPath, [...((newDeployCommand === null || newDeployCommand === void 0 ? void 0 : newDeployCommand.split(' ')) || [])], {
+                            const secondDeployExitCode = yield exec_1.exec(firebaseCommand, [...((newDeployCommand === null || newDeployCommand === void 0 ? void 0 : newDeployCommand.split(' ')) || [])], {
                                 listeners: {
                                     stdout: (data) => {
                                         secondDeployOutput += data.toString();
