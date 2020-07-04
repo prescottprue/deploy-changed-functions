@@ -1,4 +1,4 @@
-import { info, getInput, setFailed } from '@actions/core';
+import { info, debug, getInput, setFailed } from '@actions/core';
 import { which } from '@actions/io';
 import { exec } from '@actions/exec';
 import {
@@ -113,13 +113,14 @@ export default async function run(): Promise<void> {
       } else {
         info(`Calling deploy with args: ${deployArgs.join(' ')}`);
         const firebaseCommand = 'firebase';
-
+        const npxPath = await which('npx', true);
+        debug(`npx path: ${npxPath}`);
         // Exit if path not found to firebase command (provided by firebase-tools)
         let deployCommandOutput = '';
         // Call deploy command with listener for output (so that in case of failure,
         // it can be parsed for a list of functions which must be re-deployed)
         const deployExitCode = await exec(
-          'npx',
+          npxPath,
           [firebaseCommand, ...deployArgs, '--project', projectId],
           {
             listeners: {
@@ -147,7 +148,7 @@ export default async function run(): Promise<void> {
             const newDeployCommand = searchResults && searchResults[1];
             let secondDeployOutput = '';
             const secondDeployExitCode = await exec(
-              'npx',
+              npxPath,
               [firebaseCommand, ...(newDeployCommand?.split(' ') || [])],
               {
                 listeners: {
