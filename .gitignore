@@ -42,3 +42,6 @@ typings/
 
 # Output of 'npm pack'
 *.tgz
+
+# Build (only included in pushes to major version branches)
+dist
