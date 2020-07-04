@@ -1,4 +1,4 @@
-import { info, getInput, setFailed } from '@actions/core';
+import { info, getInput, setFailed, addPath } from '@actions/core';
 import { exec } from '@actions/exec';
 import * as toolCache from '@actions/tool-cache';
 import { which } from '@actions/io';
@@ -145,12 +145,13 @@ export default async function run(): Promise<void> {
           `#!${nodeFullPath} `,
         );
         info(`modified file: ${modifiedFile}`);
-        await fs.writeFile(firebasePath, modifiedFile);
+        // await fs.writeFile(firebasePath, modifiedFile);
         info(`Write file called`);
         // addPath(firebasePath);
         // info(`Firebase path loaded: ${firebasePath}`);
         const npxPath = await which('npx');
         info(`npx path: ${npxPath}`);
+        addPath(nodePath);
 
         const whichFirebase = await which('firebase');
         info(`firebase which path: ${whichFirebase}`);
