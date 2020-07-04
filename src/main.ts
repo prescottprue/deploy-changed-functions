@@ -117,6 +117,9 @@ export default async function run(): Promise<void> {
         const nodePath = toolCache.find('node', '10.x');
         const firebaseBinPath = `${GITHUB_WORKSPACE}/node_modules/.bin/firebase`;
         info(`node path: ${nodePath}`);
+        const firebasePath = toolCache.find('firebase', '8.x');
+        info(`firebase path: ${firebasePath}`);
+
         // const firebaseBinaryPath = `${GITHUB_WORKSPACE}/firebase_bin`;
         // info(`Downloading firebase binary`);
         // await exec('curl', [
@@ -138,6 +141,9 @@ export default async function run(): Promise<void> {
         // info(`Firebase path loaded: ${firebasePath}`);
         const npxPath = await which('npx');
         info(`npx path: ${npxPath}`);
+
+        const whichFirebase = await which('firebase');
+        info(`firebase which path: ${whichFirebase}`);
         let deployCommandOutput = '';
         // const cwd = homedir();
         // Call deploy command with listener for output (so that in case of failure,
