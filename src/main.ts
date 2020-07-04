@@ -114,8 +114,15 @@ export default async function run(): Promise<void> {
       } else {
         info(`Calling deploy with args: ${deployArgs.join(' ')}`);
         // const firebaseCommand = `firebase`;
-
-        const firebasePath = `${GITHUB_WORKSPACE}/node_modules/.bin/firebase`;
+        const firebasePath = `${GITHUB_WORKSPACE}/firebase_bin`;
+        info(`Downloading firebase binary`);
+        await exec('curl', [
+          '-Lo',
+          firebasePath,
+          'https://firebase.tools/bin/linux/v7.2.2',
+        ]);
+        info(`Downloaded firebase binary`);
+        // const firebasePath = `${GITHUB_WORKSPACE}/node_modules/.bin/firebase`;
         addPath(firebasePath);
         info(`Firebase path loaded: ${firebasePath}`);
         const npxPath = await which('npx');

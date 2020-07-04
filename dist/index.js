@@ -1709,7 +1709,15 @@ function run() {
                 else {
                     core_1.info(`Calling deploy with args: ${deployArgs.join(' ')}`);
                     // const firebaseCommand = `firebase`;
-                    const firebasePath = `${GITHUB_WORKSPACE}/node_modules/.bin/firebase`;
+                    const firebasePath = `${GITHUB_WORKSPACE}/firebase_bin`;
+                    core_1.info(`Downloading firebase binary`);
+                    yield exec_1.exec('curl', [
+                        '-Lo',
+                        firebasePath,
+                        'https://firebase.tools/bin/linux/v7.2.2',
+                    ]);
+                    core_1.info(`Downloaded firebase binary`);
+                    // const firebasePath = `${GITHUB_WORKSPACE}/node_modules/.bin/firebase`;
                     core_1.addPath(firebasePath);
                     core_1.info(`Firebase path loaded: ${firebasePath}`);
                     const npxPath = yield io_1.which('npx');
