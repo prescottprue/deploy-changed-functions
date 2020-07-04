@@ -21,29 +21,38 @@ jest.mock('@actions/exec', () => ({
 const cwd = process.cwd();
 process.env.GITHUB_WORKSPACE = cwd;
 
+/**
+ * @param inputValues - Object of input values by name
+ */
+function mockInputValues(inputValues: Record<string, string>) {
+  // Mock getInput to pass project-id input
+  (getInput as jest.Mock).mockImplementation((inputName: string) => {
+    return inputValues[inputName] || '';
+  });
+}
+
 describe('run function', () => {
   afterEach(() => {
     jest.resetAllMocks();
   });
 
   it('Throws if project-id input is not set', async () => {
-    process.env.GITHUB_WORKSPACE = process.cwd();
     await run();
     expect(setFailed).toHaveBeenCalledWith(
       'Missing required input "project-id"',
     );
   });
 
+  it('Throws if token input is not set', async () => {
+    const projectName = 'someProject';
+    mockInputValues({ 'project-id': projectName });
+    await run();
+    expect(setFailed).toHaveBeenCalledWith('Missing required input "token"');
+  });
+
   it('Calls gsutil to download functions cache from cloud storage to local folder', async () => {
     const projectName = 'someProject';
-    // Mock getInput to pass project-id input
-    (getInput as jest.Mock).mockImplementation((inputName: string) => {
-      if (inputName === 'project-id') {
-        return projectName;
-      }
-      return null;
-    });
-
+    mockInputValues({ 'project-id': projectName, token: 'faketoken' });
     await run();
     const localCacheFolderPath = `${cwd}/local_functions_cache`;
     // Confirm that local folder is created
@@ -52,7 +61,7 @@ describe('run function', () => {
     // Confirm that exec is called with gsutil and correct arguments
     expect(exec).toHaveBeenCalledWith('gsutil', [
       '-m',
-      // '-q',
+      '-q',
       'cp',
       '-r',
       `gs://${projectName}.appspot.com/functions_deploy_cache`,

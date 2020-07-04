@@ -1072,7 +1072,7 @@ const fs_1 = __webpack_require__(747);
 const utils_1 = __webpack_require__(163);
 // -m - parallelize on multiple "machines" (i.e. processes)
 // -q - quiet
-const gsutilDefaultArgs = ['-m'];
+const gsutilDefaultArgs = ['-m', '-q'];
 /**
  * @param listOfFilesToDiff - List of files to diff
  * @param options - Options object

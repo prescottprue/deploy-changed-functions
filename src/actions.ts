@@ -7,7 +7,7 @@ import { loadFirebaseJson } from './utils';
 
 // -m - parallelize on multiple "machines" (i.e. processes)
 // -q - quiet
-const gsutilDefaultArgs = ['-m'];
+const gsutilDefaultArgs = ['-m', '-q'];
 
 interface DiffOptions {
   functionsFolder: string;
