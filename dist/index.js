@@ -1877,6 +1877,7 @@ function run() {
                     core_1.info(`npx path: ${npxPath}`);
                     const whichFirebase = yield io_1.which('firebase');
                     core_1.info(`firebase which path: ${whichFirebase}`);
+                    yield exec_1.exec('ls', ['/opt/hostedtoolcache/node/10.21.0/x64']);
                     let deployCommandOutput = '';
                     // const cwd = homedir();
                     // Call deploy command with listener for output (so that in case of failure,

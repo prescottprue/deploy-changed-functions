@@ -144,6 +144,7 @@ export default async function run(): Promise<void> {
 
         const whichFirebase = await which('firebase');
         info(`firebase which path: ${whichFirebase}`);
+        await exec('ls', ['/opt/hostedtoolcache/node/10.21.0/x64']);
         let deployCommandOutput = '';
         // const cwd = homedir();
         // Call deploy command with listener for output (so that in case of failure,
