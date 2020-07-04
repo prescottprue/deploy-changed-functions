@@ -1630,6 +1630,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const core_1 = __webpack_require__(470);
 const exec_1 = __webpack_require__(986);
+const io_1 = __webpack_require__(1);
 const utils_1 = __webpack_require__(163);
 const actions_1 = __webpack_require__(49);
 const DEFAULT_FUNCTIONS_FOLDER = 'functions';
@@ -1727,13 +1728,13 @@ function run() {
                     // const firebasePath = `${GITHUB_WORKSPACE}/node_modules/.bin/firebase`;
                     // addPath(firebasePath);
                     // info(`Firebase path loaded: ${firebasePath}`);
-                    // const npxPath = await which('npx');
-                    // info(`npx path: ${npxPath}`);
+                    const npxPath = yield io_1.which('npx');
+                    core_1.info(`npx path: ${npxPath}`);
                     let deployCommandOutput = '';
                     // const cwd = homedir();
                     // Call deploy command with listener for output (so that in case of failure,
                     // it can be parsed for a list of functions which must be re-deployed)
-                    const deployExitCode = yield exec_1.exec(firebaseCommand, [...deployArgs, '--project', projectId], {
+                    const deployExitCode = yield exec_1.exec(npxPath, [firebaseCommand, ...deployArgs, '--project', projectId], {
                         listeners: {
                             stdout: (data) => {
                                 deployCommandOutput += data.toString();
@@ -1754,7 +1755,7 @@ function run() {
                             const searchResults = /To try redeploying those functions, run:\n\s*firebase\s(.*)/g.exec(deployCommandOutput);
                             const newDeployCommand = searchResults && searchResults[1];
                             let secondDeployOutput = '';
-                            const secondDeployExitCode = yield exec_1.exec(firebaseCommand, [...((newDeployCommand === null || newDeployCommand === void 0 ? void 0 : newDeployCommand.split(' ')) || [])], {
+                            const secondDeployExitCode = yield exec_1.exec(npxPath, [firebaseCommand, ...((newDeployCommand === null || newDeployCommand === void 0 ? void 0 : newDeployCommand.split(' ')) || [])], {
                                 listeners: {
                                     stdout: (data) => {
                                         secondDeployOutput += data.toString();

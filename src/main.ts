@@ -1,6 +1,6 @@
-import { info, getInput, setFailed, addPath } from '@actions/core';
-import { promises as fs } from 'fs';
+import { info, getInput, setFailed } from '@actions/core';
 import { exec } from '@actions/exec';
+import { which } from '@actions/io';
 import {
   loadFirebaseJson,
   createLocalCacheFolder,
@@ -132,15 +132,15 @@ export default async function run(): Promise<void> {
         // const firebasePath = `${GITHUB_WORKSPACE}/node_modules/.bin/firebase`;
         // addPath(firebasePath);
         // info(`Firebase path loaded: ${firebasePath}`);
-        // const npxPath = await which('npx');
-        // info(`npx path: ${npxPath}`);
+        const npxPath = await which('npx');
+        info(`npx path: ${npxPath}`);
         let deployCommandOutput = '';
         // const cwd = homedir();
         // Call deploy command with listener for output (so that in case of failure,
         // it can be parsed for a list of functions which must be re-deployed)
         const deployExitCode = await exec(
-          firebaseCommand,
-          [...deployArgs, '--project', projectId],
+          npxPath,
+          [firebaseCommand, ...deployArgs, '--project', projectId],
           {
             listeners: {
               stdout: (data: Buffer) => {
@@ -169,8 +169,8 @@ export default async function run(): Promise<void> {
             const newDeployCommand = searchResults && searchResults[1];
             let secondDeployOutput = '';
             const secondDeployExitCode = await exec(
-              firebaseCommand,
-              [...(newDeployCommand?.split(' ') || [])],
+              npxPath,
+              [firebaseCommand, ...(newDeployCommand?.split(' ') || [])],
               {
                 listeners: {
                   stdout: (data: Buffer) => {
