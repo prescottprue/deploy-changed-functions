@@ -18,6 +18,9 @@ jest.mock('@actions/exec', () => ({
   exec: jest.fn(() => Promise.resolve(0)),
 }));
 
+const cwd = process.cwd();
+process.env.GITHUB_WORKSPACE = cwd;
+
 describe('run function', () => {
   afterEach(() => {
     jest.resetAllMocks();
@@ -32,8 +35,6 @@ describe('run function', () => {
   });
 
   it('Calls gsutil to download functions cache from cloud storage to local folder', async () => {
-    const cwd = process.cwd();
-    process.env.GITHUB_WORKSPACE = cwd;
     const projectName = 'someProject';
     // Mock getInput to pass project-id input
     (getInput as jest.Mock).mockImplementation((inputName: string) => {

@@ -147,12 +147,10 @@ export default async function run(): Promise<void> {
       }
     }
 
-    const functionsSrcFolder = `${GITHUB_WORKSPACE}/src`;
-
     // Re-upload files to cache
-    const listOfFilesToUpload = [...topLevelFilesToCheck, functionsSrcFolder];
+    const listOfFilesToUpload = [...topLevelFilesToCheck, 'src'];
     if (firebaseJson) {
-      listOfFilesToUpload.push(`${GITHUB_WORKSPACE}/firebase.json`);
+      listOfFilesToUpload.push('firebase.json');
     }
     await writeCache(listOfFilesToUpload, { functionsFolder, storageBaseUrl });
   } catch (error) {

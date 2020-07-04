@@ -31,7 +31,7 @@ jobs:
           export_default_credentials: true
 
       - name: Deploy Only Changed Functions
-        uses: prescottprue/deploy-changed-functions@master
+        uses: prescottprue/deploy-changed-functions@v0
         with:
           cache-folder: functions_deploy_cache/current
           local-folder: local-functions-cache
