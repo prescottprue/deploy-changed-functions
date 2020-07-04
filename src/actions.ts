@@ -225,6 +225,6 @@ export async function createLocalCacheFolder(
     // Create local folder for cache
     await mkdirP(localFolder);
   } catch (error) {
-    throw new Error(`Error creating local cache folder: ${error}`);
+    throw new Error(`Failed to create local cache folder: ${error}`);
   }
 }

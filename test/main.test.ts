@@ -23,11 +23,6 @@ describe('run function', () => {
     jest.resetAllMocks();
   });
 
-  it('Throws if GITHUB_WORKSPACE is not set', async () => {
-    await run();
-    expect(core.setFailed).toHaveBeenCalledWith('Missing GITHUB_WORKSPACE!');
-  });
-
   it('Throws if project-id input is not set', async () => {
     process.env.GITHUB_WORKSPACE = process.cwd();
     await run();

@@ -1,4 +1,5 @@
 import * as core from '@actions/core';
+import * as io from '@actions/io';
 import { exec } from '@actions/exec';
 import {
   loadFirebaseJson,
@@ -12,14 +13,15 @@ import {
   checkForTopLevelChanges,
 } from './actions';
 
+const DEFAULT_FUNCTIONS_FOLDER = 'functions';
+const DEFAULT_STORAGE_FOLDER = 'functions_deploy_cache';
+const DEFAULT_LOCAL_CACHE_FOLDER = 'local_functions_cache';
+
 /**
  * Run deploy-changed-functions logic
  */
 export default async function run(): Promise<void> {
   const { GITHUB_WORKSPACE } = process.env;
-  if (!GITHUB_WORKSPACE) {
-    core.setFailed('Missing GITHUB_WORKSPACE!');
-  }
 
   const projectId = core.getInput('project-id');
   if (!projectId) {
@@ -32,9 +34,8 @@ export default async function run(): Promise<void> {
     core.setFailed('Missing required input "token"');
   }
 
-  const cacheFolder = core.getInput('cache-folder') || 'functions_deploy_cache';
-  const folderSuffix = cacheFolder?.split('/').pop();
-  const localFolder = core.getInput('local-folder') || 'local_functions_cache';
+  const localFolder =
+    core.getInput('local-folder') || DEFAULT_LOCAL_CACHE_FOLDER;
   const storageBucket = core.getInput('storage-bucket');
   const storageBaseUrl = `gs://${storageBucket || projectId}.appspot.com`;
 
@@ -44,13 +45,8 @@ export default async function run(): Promise<void> {
     await createLocalCacheFolder(localCacheFolder);
     core.info(`Created local cache folder "${localCacheFolder}"`);
 
-    // Load functions settings from firebase.json
-    const firebaseJson = await loadFirebaseJson();
-    core.info('Successfully loaded firebase.json');
-
-    const functionsFolderWithoutPrefix =
-      firebaseJson?.functions?.source || core.getInput('functions-folder');
-    const functionsFolder = `${GITHUB_WORKSPACE}/${functionsFolderWithoutPrefix}`;
+    const cacheFolder = core.getInput('cache-folder') || DEFAULT_STORAGE_FOLDER;
+    const folderSuffix = cacheFolder?.split('/').pop();
 
     // Download Functions cache from Cloud Storage
     await downloadCache(cacheFolder, { localCacheFolder, storageBaseUrl });
@@ -60,6 +56,18 @@ export default async function run(): Promise<void> {
     const topLevelFilesInput: string = core.getInput('global-paths');
     const topLevelFilesToCheck: string[] =
       topLevelFilesInput?.split(',').filter(Boolean) || [];
+
+    // Load functions settings from firebase.json (undefined if file does not exist)
+    const firebaseJson = await loadFirebaseJson();
+    core.info('Successfully loaded firebase.json');
+
+    // Get path for functions folder (priority: input -> firebase.json functions source -> 'functions')
+    const functionsFolderInput = core.getInput('functions-folder');
+    const functionsFolder = `${GITHUB_WORKSPACE}/${
+      functionsFolderInput ||
+      firebaseJson?.functions?.source ||
+      DEFAULT_FUNCTIONS_FOLDER
+    }`;
 
     // Check files/folders which can cause a full functions deployment
     const topLevelFileChanged = await checkForTopLevelChanges(
@@ -99,43 +107,53 @@ export default async function run(): Promise<void> {
     }
 
     if (deployArgs?.length > 2) {
-      core.info(`Calling deploy with args: ${deployArgs.join(' ')}`);
-      let deployCommandOutput = '';
+      const skipDeploy = core.getInput('skip-deploy');
+      if (skipDeploy) {
+        core.info(
+          `Skipping deploy, would be using args: ${deployArgs.join(' ')}`,
+        );
+      } else {
+        core.info(`Calling deploy with args: ${deployArgs.join(' ')}`);
+        let deployCommandOutput = '';
+        const firebaseToolsPath = await io.which('firebase');
 
-      // Call deploy command with listener for output (so that in case of failure,
-      // it can be parsed for a list of functions which must be re-deployed)
-      const deployExitCode = await exec(
-        'firebase',
-        deployArgs.concat(['--project', projectId]),
-        {
-          listeners: {
-            stdout: (data: Buffer) => {
-              deployCommandOutput += data.toString();
+        // Call deploy command with listener for output (so that in case of failure,
+        // it can be parsed for a list of functions which must be re-deployed)
+        const deployExitCode = await exec(
+          firebaseToolsPath,
+          deployArgs.concat(['--project', projectId]),
+          {
+            listeners: {
+              stdout: (data: Buffer) => {
+                deployCommandOutput += data.toString();
+              },
+            },
+            env: {
+              FIREBASE_TOKEN: firebaseCiToken,
             },
           },
-          env: {
-            FIREBASE_TOKEN: firebaseCiToken,
-          },
-        },
-      );
-
-      // Attempt re-deploy if first deploy was not successful
-      // Command is parsed from stdout of initial deploy command
-      if (deployExitCode) {
-        core.info(
-          `Deploy failed, attempting to parse re-deploy message from output...`,
         );
-        if (deployCommandOutput) {
-          // Get functions deploy commands from output of original deploy command
-          const searchResults = /To try redeploying those functions, run:\n\s*firebase\s(.*)/g.exec(
-            deployCommandOutput,
+
+        // Attempt re-deploy if first deploy was not successful
+        // Command is parsed from stdout of initial deploy command
+        if (deployExitCode) {
+          core.info(
+            `Deploy failed, attempting to parse re-deploy message from output...`,
           );
-          const newDeployCommand = searchResults && searchResults[1];
-          await exec('firebase', newDeployCommand?.split(' '));
+          if (deployCommandOutput) {
+            // Get functions deploy commands from output of original deploy command
+            const searchResults = /To try redeploying those functions, run:\n\s*firebase\s(.*)/g.exec(
+              deployCommandOutput,
+            );
+            const newDeployCommand = searchResults && searchResults[1];
+            await exec(firebaseToolsPath, newDeployCommand?.split(' '));
+          }
         }
       }
     }
+
     const functionsSrcFolder = `${GITHUB_WORKSPACE}/src`;
+
     // Re-upload files to cache
     const listOfFilesToUpload = [...topLevelFilesToCheck, functionsSrcFolder];
     if (firebaseJson) {

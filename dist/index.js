@@ -1242,7 +1242,7 @@ function createLocalCacheFolder(localFolder) {
             yield io_1.mkdirP(localFolder);
         }
         catch (error) {
-            throw new Error(`Error creating local cache folder: ${error}`);
+            throw new Error(`Failed to create local cache folder: ${error}`);
         }
     });
 }
@@ -1651,9 +1651,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const core = __importStar(__webpack_require__(470));
+const io = __importStar(__webpack_require__(1));
 const exec_1 = __webpack_require__(986);
 const utils_1 = __webpack_require__(163);
 const actions_1 = __webpack_require__(49);
+const DEFAULT_FUNCTIONS_FOLDER = 'functions';
+const DEFAULT_STORAGE_FOLDER = 'functions_deploy_cache';
+const DEFAULT_LOCAL_CACHE_FOLDER = 'local_functions_cache';
 /**
  * Run deploy-changed-functions logic
  */
@@ -1661,9 +1665,6 @@ function run() {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
         const { GITHUB_WORKSPACE } = process.env;
-        if (!GITHUB_WORKSPACE) {
-            core.setFailed('Missing GITHUB_WORKSPACE!');
-        }
         const projectId = core.getInput('project-id');
         if (!projectId) {
             core.setFailed('Missing required input "project-id"');
@@ -1673,9 +1674,7 @@ function run() {
         if (!firebaseCiToken) {
             core.setFailed('Missing required input "token"');
         }
-        const cacheFolder = core.getInput('cache-folder') || 'functions_deploy_cache';
-        const folderSuffix = cacheFolder === null || cacheFolder === void 0 ? void 0 : cacheFolder.split('/').pop();
-        const localFolder = core.getInput('local-folder') || 'local_functions_cache';
+        const localFolder = core.getInput('local-folder') || DEFAULT_LOCAL_CACHE_FOLDER;
         const storageBucket = core.getInput('storage-bucket');
         const storageBaseUrl = `gs://${storageBucket || projectId}.appspot.com`;
         try {
@@ -1683,17 +1682,21 @@ function run() {
             const localCacheFolder = `${GITHUB_WORKSPACE}/${localFolder}`;
             yield utils_1.createLocalCacheFolder(localCacheFolder);
             core.info(`Created local cache folder "${localCacheFolder}"`);
-            // Load functions settings from firebase.json
-            const firebaseJson = yield utils_1.loadFirebaseJson();
-            core.info('Successfully loaded firebase.json');
-            const functionsFolderWithoutPrefix = ((_a = firebaseJson === null || firebaseJson === void 0 ? void 0 : firebaseJson.functions) === null || _a === void 0 ? void 0 : _a.source) || core.getInput('functions-folder');
-            const functionsFolder = `${GITHUB_WORKSPACE}/${functionsFolderWithoutPrefix}`;
+            const cacheFolder = core.getInput('cache-folder') || DEFAULT_STORAGE_FOLDER;
+            const folderSuffix = cacheFolder === null || cacheFolder === void 0 ? void 0 : cacheFolder.split('/').pop();
             // Download Functions cache from Cloud Storage
             yield actions_1.downloadCache(cacheFolder, { localCacheFolder, storageBaseUrl });
             core.info('Successfully downloaded Cloud Functions cache');
             // Get list of "global" files which cause a full functions deployment
             const topLevelFilesInput = core.getInput('global-paths');
             const topLevelFilesToCheck = (topLevelFilesInput === null || topLevelFilesInput === void 0 ? void 0 : topLevelFilesInput.split(',').filter(Boolean)) || [];
+            // Load functions settings from firebase.json (undefined if file does not exist)
+            const firebaseJson = yield utils_1.loadFirebaseJson();
+            core.info('Successfully loaded firebase.json');
+            // Get path for functions folder (priority: input -> firebase.json functions source -> 'functions')
+            const functionsFolderInput = core.getInput('functions-folder');
+            const functionsFolder = `${GITHUB_WORKSPACE}/${functionsFolderInput || ((_a = firebaseJson === null || firebaseJson === void 0 ? void 0 : firebaseJson.functions) === null || _a === void 0 ? void 0 : _a.source) ||
+                DEFAULT_FUNCTIONS_FOLDER}`;
             // Check files/folders which can cause a full functions deployment
             const topLevelFileChanged = yield actions_1.checkForTopLevelChanges(topLevelFilesToCheck, {
                 localCacheFolder: `${localCacheFolder}/${folderSuffix}`,
@@ -1722,29 +1725,36 @@ function run() {
                 core.info('No functions source code changed');
             }
             if ((deployArgs === null || deployArgs === void 0 ? void 0 : deployArgs.length) > 2) {
-                core.info(`Calling deploy with args: ${deployArgs.join(' ')}`);
-                let deployCommandOutput = '';
-                // Call deploy command with listener for output (so that in case of failure,
-                // it can be parsed for a list of functions which must be re-deployed)
-                const deployExitCode = yield exec_1.exec('firebase', deployArgs.concat(['--project', projectId]), {
-                    listeners: {
-                        stdout: (data) => {
-                            deployCommandOutput += data.toString();
+                const skipDeploy = core.getInput('skip-deploy');
+                if (skipDeploy) {
+                    core.info(`Skipping deploy, would be using args: ${deployArgs.join(' ')}`);
+                }
+                else {
+                    core.info(`Calling deploy with args: ${deployArgs.join(' ')}`);
+                    let deployCommandOutput = '';
+                    const firebaseToolsPath = yield io.which('firebase');
+                    // Call deploy command with listener for output (so that in case of failure,
+                    // it can be parsed for a list of functions which must be re-deployed)
+                    const deployExitCode = yield exec_1.exec(firebaseToolsPath, deployArgs.concat(['--project', projectId]), {
+                        listeners: {
+                            stdout: (data) => {
+                                deployCommandOutput += data.toString();
+                            },
                         },
-                    },
-                    env: {
-                        FIREBASE_TOKEN: firebaseCiToken,
-                    },
-                });
-                // Attempt re-deploy if first deploy was not successful
-                // Command is parsed from stdout of initial deploy command
-                if (deployExitCode) {
-                    core.info(`Deploy failed, attempting to parse re-deploy message from output...`);
-                    if (deployCommandOutput) {
-                        // Get functions deploy commands from output of original deploy command
-                        const searchResults = /To try redeploying those functions, run:\n\s*firebase\s(.*)/g.exec(deployCommandOutput);
-                        const newDeployCommand = searchResults && searchResults[1];
-                        yield exec_1.exec('firebase', newDeployCommand === null || newDeployCommand === void 0 ? void 0 : newDeployCommand.split(' '));
+                        env: {
+                            FIREBASE_TOKEN: firebaseCiToken,
+                        },
+                    });
+                    // Attempt re-deploy if first deploy was not successful
+                    // Command is parsed from stdout of initial deploy command
+                    if (deployExitCode) {
+                        core.info(`Deploy failed, attempting to parse re-deploy message from output...`);
+                        if (deployCommandOutput) {
+                            // Get functions deploy commands from output of original deploy command
+                            const searchResults = /To try redeploying those functions, run:\n\s*firebase\s(.*)/g.exec(deployCommandOutput);
+                            const newDeployCommand = searchResults && searchResults[1];
+                            yield exec_1.exec(firebaseToolsPath, newDeployCommand === null || newDeployCommand === void 0 ? void 0 : newDeployCommand.split(' '));
+                        }
                     }
                 }
             }

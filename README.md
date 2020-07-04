@@ -1,6 +1,6 @@
 # Deploy Changed Functions
 
-> Deploy only cloud functions which have changed
+> Deploy only Google Cloud Functions which have changed
 
 
 ## Usage
@@ -52,7 +52,10 @@ functions-folder:
   default: 'functions'
 ignore:
   description: 'Globs to ignore in diffing (i.e *.test.js)'
-  default: 'functions'
+  default: '*.spec.js'
+skip-deploy:
+  description: 'Whether or not to skip deploy'
+  default: false
 cache-folder:
   description: 'Folder to use for cache'
 local-folder:
@@ -63,7 +66,7 @@ storage-bucket:
 
 ## Required Directory structure
 
-Functions must live within their own folders of `functions/src` (or whatever your functions folder name)
+Functions must live within their own folders of `<- functions folder ->/src`:
 
 ```
 functions

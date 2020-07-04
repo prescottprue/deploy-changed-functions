@@ -11,7 +11,9 @@ inputs:
     default: 'functions'
   ignore:
     description: 'Globs to ignore in diffing (i.e *.test.js)'
-    default: 'functions'
+  skip-deploy:
+    description: 'Whether or not to skip deploy'
+    default: false
   cache-folder:
     description: 'Folder to use for cache'
   local-folder:
