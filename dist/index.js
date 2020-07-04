@@ -1629,7 +1629,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const core_1 = __webpack_require__(470);
-const io_1 = __webpack_require__(1);
 const exec_1 = __webpack_require__(986);
 const utils_1 = __webpack_require__(163);
 const actions_1 = __webpack_require__(49);
@@ -1708,23 +1707,12 @@ function run() {
                 }
                 else {
                     core_1.info(`Calling deploy with args: ${deployArgs.join(' ')}`);
-                    let firebaseToolsPath = 'firebase';
-                    // Exit if path not found to firebase command (provided by firebase-tools)
-                    try {
-                        firebaseToolsPath = yield io_1.which('firebase', true);
-                        core_1.info(`firebase-tools path:${firebaseToolsPath}`);
-                    }
-                    catch (err) {
-                        core_1.info('Firebase command not found');
-                        // setFailed(
-                        //   'firebase command not found, make sure you have firebase-tools installed as a development dependency and that your node_modules are installed',
-                        // );
-                    }
+                    const firebaseCommand = 'firebase';
                     // Exit if path not found to firebase command (provided by firebase-tools)
                     let deployCommandOutput = '';
                     // Call deploy command with listener for output (so that in case of failure,
                     // it can be parsed for a list of functions which must be re-deployed)
-                    const deployExitCode = yield exec_1.exec(firebaseToolsPath, deployArgs.concat(['--project', projectId]), {
+                    const deployExitCode = yield exec_1.exec('npx', [firebaseCommand, ...deployArgs, '--project', projectId], {
                         listeners: {
                             stdout: (data) => {
                                 deployCommandOutput += data.toString();
@@ -1743,7 +1731,7 @@ function run() {
                             const searchResults = /To try redeploying those functions, run:\n\s*firebase\s(.*)/g.exec(deployCommandOutput);
                             const newDeployCommand = searchResults && searchResults[1];
                             let secondDeployOutput = '';
-                            const secondDeployExitCode = yield exec_1.exec(firebaseToolsPath, newDeployCommand === null || newDeployCommand === void 0 ? void 0 : newDeployCommand.split(' '), {
+                            const secondDeployExitCode = yield exec_1.exec('npx', [firebaseCommand, ...((newDeployCommand === null || newDeployCommand === void 0 ? void 0 : newDeployCommand.split(' ')) || [])], {
                                 listeners: {
                                     stdout: (data) => {
                                         secondDeployOutput += data.toString();

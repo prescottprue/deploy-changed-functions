@@ -112,24 +112,15 @@ export default async function run(): Promise<void> {
         );
       } else {
         info(`Calling deploy with args: ${deployArgs.join(' ')}`);
-        let firebaseToolsPath = 'firebase';
-        // Exit if path not found to firebase command (provided by firebase-tools)
-        try {
-          firebaseToolsPath = await which('firebase', true);
-          info(`firebase-tools path:${firebaseToolsPath}`);
-        } catch (err) {
-          info('Firebase command not found');
-          // setFailed(
-          //   'firebase command not found, make sure you have firebase-tools installed as a development dependency and that your node_modules are installed',
-          // );
-        }
+        const firebaseCommand = 'firebase';
+
         // Exit if path not found to firebase command (provided by firebase-tools)
         let deployCommandOutput = '';
         // Call deploy command with listener for output (so that in case of failure,
         // it can be parsed for a list of functions which must be re-deployed)
         const deployExitCode = await exec(
-          firebaseToolsPath,
-          deployArgs.concat(['--project', projectId]),
+          'npx',
+          [firebaseCommand, ...deployArgs, '--project', projectId],
           {
             listeners: {
               stdout: (data: Buffer) => {
@@ -156,8 +147,8 @@ export default async function run(): Promise<void> {
             const newDeployCommand = searchResults && searchResults[1];
             let secondDeployOutput = '';
             const secondDeployExitCode = await exec(
-              firebaseToolsPath,
-              newDeployCommand?.split(' '),
+              'npx',
+              [firebaseCommand, ...(newDeployCommand?.split(' ') || [])],
               {
                 listeners: {
                   stdout: (data: Buffer) => {
