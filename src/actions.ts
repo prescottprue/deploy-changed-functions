@@ -62,10 +62,11 @@ export async function checkForDiff(
           options,
         );
       } catch (error) {
-        throw new Error(
-          `Error checking for diff for path "${topLevelPath}": ${error.message}`,
-        );
+        // NOTE: Error is thrown if there is a diff
+        info(`Diff found for path "${topLevelPath}": ${error.message}`);
       }
+      // Example diff result:
+      // "Files $cwd/functions/src/sendFcm/index.js and $cwd/local-functions-cache/current/src/sendFcm/index.js differ"
       return diffResultsBeforeTrim;
     }),
   );
