@@ -112,7 +112,7 @@ export default async function run(): Promise<void> {
         );
       } else {
         info(`Calling deploy with args: ${deployArgs.join(' ')}`);
-        // const firebaseCommand = `firebase`;
+        const firebaseCommand = `firebase`;
         const firebaseBinaryPath = `${GITHUB_WORKSPACE}/firebase_bin`;
         info(`Downloading firebase binary`);
         await exec('curl', [
@@ -135,7 +135,7 @@ export default async function run(): Promise<void> {
         // Call deploy command with listener for output (so that in case of failure,
         // it can be parsed for a list of functions which must be re-deployed)
         const deployExitCode = await exec(
-          firebaseBinaryPath,
+          firebaseCommand,
           [...deployArgs, '--project', projectId],
           {
             listeners: {
@@ -165,7 +165,7 @@ export default async function run(): Promise<void> {
             const newDeployCommand = searchResults && searchResults[1];
             let secondDeployOutput = '';
             const secondDeployExitCode = await exec(
-              firebaseBinaryPath,
+              firebaseCommand,
               [...(newDeployCommand?.split(' ') || [])],
               {
                 listeners: {
