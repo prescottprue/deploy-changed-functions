@@ -1629,7 +1629,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const core_1 = __webpack_require__(470);
-const os_1 = __webpack_require__(87);
 const io_1 = __webpack_require__(1);
 const exec_1 = __webpack_require__(986);
 const utils_1 = __webpack_require__(163);
@@ -1709,16 +1708,16 @@ function run() {
                 }
                 else {
                     core_1.info(`Calling deploy with args: ${deployArgs.join(' ')}`);
-                    const firebaseCommand = `firebase`;
-                    const firebasePath = yield io_1.which('firebase');
+                    // const firebaseCommand = `firebase`;
+                    const firebasePath = `${GITHUB_WORKSPACE}/node_modules/.bin/firebase`;
                     core_1.info(`Firebase path loaded: ${firebasePath}`);
                     const npxPath = yield io_1.which('npx');
                     core_1.info(`npx path: ${npxPath}`);
                     let deployCommandOutput = '';
-                    const cwd = os_1.homedir();
+                    // const cwd = homedir();
                     // Call deploy command with listener for output (so that in case of failure,
                     // it can be parsed for a list of functions which must be re-deployed)
-                    const deployExitCode = yield exec_1.exec(npxPath, [firebaseCommand, ...deployArgs, '--project', projectId], {
+                    const deployExitCode = yield exec_1.exec(firebasePath, [...deployArgs, '--project', projectId], {
                         listeners: {
                             stdout: (data) => {
                                 deployCommandOutput += data.toString();
@@ -1727,7 +1726,7 @@ function run() {
                         env: {
                             FIREBASE_TOKEN: firebaseCiToken,
                         },
-                        cwd,
+                        cwd: GITHUB_WORKSPACE,
                     });
                     // Attempt re-deploy if first deploy was not successful
                     // Command is parsed from stdout of initial deploy command
@@ -1738,7 +1737,7 @@ function run() {
                             const searchResults = /To try redeploying those functions, run:\n\s*firebase\s(.*)/g.exec(deployCommandOutput);
                             const newDeployCommand = searchResults && searchResults[1];
                             let secondDeployOutput = '';
-                            const secondDeployExitCode = yield exec_1.exec(npxPath, [firebaseCommand, ...((newDeployCommand === null || newDeployCommand === void 0 ? void 0 : newDeployCommand.split(' ')) || [])], {
+                            const secondDeployExitCode = yield exec_1.exec(firebasePath, [...((newDeployCommand === null || newDeployCommand === void 0 ? void 0 : newDeployCommand.split(' ')) || [])], {
                                 listeners: {
                                     stdout: (data) => {
                                         secondDeployOutput += data.toString();
@@ -1747,7 +1746,7 @@ function run() {
                                 env: {
                                     FIREBASE_TOKEN: firebaseCiToken,
                                 },
-                                cwd,
+                                cwd: GITHUB_WORKSPACE,
                             });
                             if (secondDeployExitCode) {
                                 core_1.setFailed(`Redeploying failed:\n ${secondDeployOutput}`);

@@ -113,20 +113,20 @@ export default async function run(): Promise<void> {
         );
       } else {
         info(`Calling deploy with args: ${deployArgs.join(' ')}`);
-        const firebaseCommand = `firebase`;
+        // const firebaseCommand = `firebase`;
 
-        const firebasePath = await which('firebase');
+        const firebasePath = `${GITHUB_WORKSPACE}/node_modules/.bin/firebase`;
 
         info(`Firebase path loaded: ${firebasePath}`);
         const npxPath = await which('npx');
         info(`npx path: ${npxPath}`);
         let deployCommandOutput = '';
-        const cwd = homedir();
+        // const cwd = homedir();
         // Call deploy command with listener for output (so that in case of failure,
         // it can be parsed for a list of functions which must be re-deployed)
         const deployExitCode = await exec(
-          npxPath,
-          [firebaseCommand, ...deployArgs, '--project', projectId],
+          firebasePath,
+          [...deployArgs, '--project', projectId],
           {
             listeners: {
               stdout: (data: Buffer) => {
@@ -136,7 +136,7 @@ export default async function run(): Promise<void> {
             env: {
               FIREBASE_TOKEN: firebaseCiToken,
             },
-            cwd,
+            cwd: GITHUB_WORKSPACE,
           },
         );
 
@@ -154,8 +154,8 @@ export default async function run(): Promise<void> {
             const newDeployCommand = searchResults && searchResults[1];
             let secondDeployOutput = '';
             const secondDeployExitCode = await exec(
-              npxPath,
-              [firebaseCommand, ...(newDeployCommand?.split(' ') || [])],
+              firebasePath,
+              [...(newDeployCommand?.split(' ') || [])],
               {
                 listeners: {
                   stdout: (data: Buffer) => {
@@ -165,7 +165,7 @@ export default async function run(): Promise<void> {
                 env: {
                   FIREBASE_TOKEN: firebaseCiToken,
                 },
-                cwd,
+                cwd: GITHUB_WORKSPACE,
               },
             );
             if (secondDeployExitCode) {
