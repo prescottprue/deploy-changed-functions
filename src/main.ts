@@ -116,6 +116,7 @@ export default async function run(): Promise<void> {
         // const firebaseCommand = `firebase`;
         const nodePath = toolCache.find('node', '10.x');
         const firebaseBinPath = `${GITHUB_WORKSPACE}/node_modules/.bin/firebase`;
+        info(`node path: ${nodePath}`);
         // const firebaseBinaryPath = `${GITHUB_WORKSPACE}/firebase_bin`;
         // info(`Downloading firebase binary`);
         // await exec('curl', [
@@ -154,7 +155,7 @@ export default async function run(): Promise<void> {
               FIREBASE_TOKEN: firebaseCiToken,
             },
             failOnStdErr: false,
-            cwd: GITHUB_WORKSPACE,
+            // cwd: GITHUB_WORKSPACE,
           },
         );
 
@@ -183,7 +184,7 @@ export default async function run(): Promise<void> {
                 env: {
                   FIREBASE_TOKEN: firebaseCiToken,
                 },
-                cwd: GITHUB_WORKSPACE,
+                // cwd: GITHUB_WORKSPACE,
                 failOnStdErr: false,
               },
             );

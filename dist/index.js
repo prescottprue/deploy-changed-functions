@@ -1851,6 +1851,7 @@ function run() {
                     // const firebaseCommand = `firebase`;
                     const nodePath = toolCache.find('node', '10.x');
                     const firebaseBinPath = `${GITHUB_WORKSPACE}/node_modules/.bin/firebase`;
+                    core_1.info(`node path: ${nodePath}`);
                     // const firebaseBinaryPath = `${GITHUB_WORKSPACE}/firebase_bin`;
                     // info(`Downloading firebase binary`);
                     // await exec('curl', [
@@ -1886,7 +1887,6 @@ function run() {
                             FIREBASE_TOKEN: firebaseCiToken,
                         },
                         failOnStdErr: false,
-                        cwd: GITHUB_WORKSPACE,
                     });
                     // Attempt re-deploy if first deploy was not successful
                     // Command is parsed from stdout of initial deploy command
@@ -1906,7 +1906,7 @@ function run() {
                                 env: {
                                     FIREBASE_TOKEN: firebaseCiToken,
                                 },
-                                cwd: GITHUB_WORKSPACE,
+                                // cwd: GITHUB_WORKSPACE,
                                 failOnStdErr: false,
                             });
                             if (secondDeployExitCode) {
