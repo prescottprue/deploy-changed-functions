@@ -79,6 +79,5 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           majorVersion=$(cat package.json | jq -r '.version' | cut -d "." -f1)
-          git add -f dist
           git push -f https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git HEAD:refs/heads/v$majorVersion
   

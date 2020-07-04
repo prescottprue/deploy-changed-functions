@@ -1,5 +1,5 @@
-import * as core from '@actions/core';
-import * as io from '@actions/io';
+import { info, getInput, setFailed } from '@actions/core';
+import { which } from '@actions/io';
 import { exec } from '@actions/exec';
 import {
   loadFirebaseJson,
@@ -23,46 +23,45 @@ const DEFAULT_LOCAL_CACHE_FOLDER = 'local_functions_cache';
 export default async function run(): Promise<void> {
   const { GITHUB_WORKSPACE } = process.env;
 
-  const projectId = core.getInput('project-id');
+  const projectId = getInput('project-id');
   if (!projectId) {
-    core.setFailed('Missing required input "project-id"');
+    setFailed('Missing required input "project-id"');
   }
 
-  const firebaseCiToken = core.getInput('token');
+  const firebaseCiToken = getInput('token');
   // Exit if token is missing
   if (!firebaseCiToken) {
-    core.setFailed('Missing required input "token"');
+    setFailed('Missing required input "token"');
   }
 
-  const localFolder =
-    core.getInput('local-folder') || DEFAULT_LOCAL_CACHE_FOLDER;
-  const storageBucket = core.getInput('storage-bucket');
+  const localFolder = getInput('local-folder') || DEFAULT_LOCAL_CACHE_FOLDER;
+  const storageBucket = getInput('storage-bucket');
   const storageBaseUrl = `gs://${storageBucket || projectId}.appspot.com`;
 
   try {
     // Create local folder for cache
     const localCacheFolder = `${GITHUB_WORKSPACE}/${localFolder}`;
     await createLocalCacheFolder(localCacheFolder);
-    core.info(`Created local cache folder "${localCacheFolder}"`);
+    info(`Created local cache folder "${localCacheFolder}"`);
 
-    const cacheFolder = core.getInput('cache-folder') || DEFAULT_STORAGE_FOLDER;
+    const cacheFolder = getInput('cache-folder') || DEFAULT_STORAGE_FOLDER;
     const folderSuffix = cacheFolder?.split('/').pop();
 
     // Download Functions cache from Cloud Storage
     await downloadCache(cacheFolder, { localCacheFolder, storageBaseUrl });
-    core.info('Successfully downloaded Cloud Functions cache');
+    info('Successfully downloaded Cloud Functions cache');
 
     // Get list of "global" files which cause a full functions deployment
-    const topLevelFilesInput: string = core.getInput('global-paths');
+    const topLevelFilesInput: string = getInput('global-paths');
     const topLevelFilesToCheck: string[] =
       topLevelFilesInput?.split(',').filter(Boolean) || [];
 
     // Load functions settings from firebase.json (undefined if file does not exist)
     const firebaseJson = await loadFirebaseJson();
-    core.info('Successfully loaded firebase.json');
+    info('Successfully loaded firebase.json');
 
     // Get path for functions folder (priority: input -> firebase.json functions source -> 'functions')
-    const functionsFolderInput = core.getInput('functions-folder');
+    const functionsFolderInput = getInput('functions-folder');
     const functionsFolder = `${GITHUB_WORKSPACE}/${
       functionsFolderInput ||
       firebaseJson?.functions?.source ||
@@ -83,7 +82,7 @@ export default async function run(): Promise<void> {
       deployArgs.push('functions');
     }
 
-    core.info('Checking for changes in Cloud Functions folder');
+    info('Checking for changes in Cloud Functions folder');
 
     // Check for change in files within src folder
     // TODO: Switch this to checking dist so that babel config is handled
@@ -91,9 +90,7 @@ export default async function run(): Promise<void> {
       localCacheFolder: `${localCacheFolder}/${folderSuffix}`,
       functionsFolder,
     });
-    core.info(
-      `List of changed function files: ${listOfChangedFiles.join('\n')}`,
-    );
+    info(`List of changed function files: ${listOfChangedFiles.join('\n')}`);
     const changedFunctionsOnlyCommand = onlyChangedFunctions(
       listOfChangedFiles,
     );
@@ -103,19 +100,17 @@ export default async function run(): Promise<void> {
     if (changedFunctionsOnlyCommand?.length) {
       deployArgs.push(changedFunctionsOnlyCommand);
     } else {
-      core.info('No functions source code changed');
+      info('No functions source code changed');
     }
 
     if (deployArgs?.length > 2) {
-      const skipDeploy = core.getInput('skip-deploy');
+      const skipDeploy = getInput('skip-deploy');
       if (skipDeploy) {
-        core.info(
-          `Skipping deploy, would be using args: ${deployArgs.join(' ')}`,
-        );
+        info(`Skipping deploy, would be using args: ${deployArgs.join(' ')}`);
       } else {
-        core.info(`Calling deploy with args: ${deployArgs.join(' ')}`);
+        info(`Calling deploy with args: ${deployArgs.join(' ')}`);
         let deployCommandOutput = '';
-        const firebaseToolsPath = await io.which('firebase');
+        const firebaseToolsPath = await which('firebase');
 
         // Call deploy command with listener for output (so that in case of failure,
         // it can be parsed for a list of functions which must be re-deployed)
@@ -137,7 +132,7 @@ export default async function run(): Promise<void> {
         // Attempt re-deploy if first deploy was not successful
         // Command is parsed from stdout of initial deploy command
         if (deployExitCode) {
-          core.info(
+          info(
             `Deploy failed, attempting to parse re-deploy message from output...`,
           );
           if (deployCommandOutput) {
@@ -161,6 +156,6 @@ export default async function run(): Promise<void> {
     }
     await writeCache(listOfFilesToUpload, { functionsFolder, storageBaseUrl });
   } catch (error) {
-    core.setFailed(error.message);
+    setFailed(error.message);
   }
 }

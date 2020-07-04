@@ -1,6 +1,6 @@
-import * as core from '@actions/core';
-import * as exec from '@actions/exec';
-import * as io from '@actions/io';
+import { setFailed, getInput } from '@actions/core';
+import { exec } from '@actions/exec';
+import { mkdirP } from '@actions/io';
 import run from '../src/main';
 
 jest.mock('@actions/core', () => ({
@@ -26,7 +26,7 @@ describe('run function', () => {
   it('Throws if project-id input is not set', async () => {
     process.env.GITHUB_WORKSPACE = process.cwd();
     await run();
-    expect(core.setFailed).toHaveBeenCalledWith(
+    expect(setFailed).toHaveBeenCalledWith(
       'Missing required input "project-id"',
     );
   });
@@ -36,7 +36,7 @@ describe('run function', () => {
     process.env.GITHUB_WORKSPACE = cwd;
     const projectName = 'someProject';
     // Mock getInput to pass project-id input
-    (core.getInput as jest.Mock).mockImplementation((inputName: string) => {
+    (getInput as jest.Mock).mockImplementation((inputName: string) => {
       if (inputName === 'project-id') {
         return projectName;
       }
@@ -46,10 +46,10 @@ describe('run function', () => {
     await run();
     const localCacheFolderPath = `${cwd}/local_functions_cache`;
     // Confirm that local folder is created
-    expect(io.mkdirP).toHaveBeenCalledWith(localCacheFolderPath);
+    expect(mkdirP).toHaveBeenCalledWith(localCacheFolderPath);
 
     // Confirm that exec is called with gsutil and correct arguments
-    expect(exec.exec).toHaveBeenCalledWith('gsutil', [
+    expect(exec).toHaveBeenCalledWith('gsutil', [
       '-m',
       '-q',
       'cp',

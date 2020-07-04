@@ -1,4 +1,4 @@
-import * as core from '@actions/core';
+import { warning } from '@actions/core';
 import { mkdirP } from '@actions/io';
 import { promises as fs, existsSync } from 'fs';
 
@@ -24,7 +24,7 @@ export async function loadFirebaseJson(
     parentPath || process.env.GITHUB_WORKSPACE
   }/firebase.json`;
   if (!existsSync(firebaseJsonPath)) {
-    core.warning(`firebase.json not found at path: "${firebaseJsonPath}"`);
+    warning(`firebase.json not found at path: "${firebaseJsonPath}"`);
     return undefined;
   }
 

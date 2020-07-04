@@ -1,4 +1,4 @@
-import * as core from '@actions/core';
+import { info, getInput } from '@actions/core';
 import isEqual from 'lodash/isEqual';
 import { exec } from '@actions/exec';
 import { mkdirP } from '@actions/io';
@@ -27,11 +27,11 @@ export async function checkForDiff(
   // Check for change in files
   // TODO: Load ignore settings from functions.ignore of firebase.json
   // TODO: Include changes to firebase.json
-  core.info(
+  info(
     `Diffing files between paths: "${functionsFolder}" and "${localCacheFolder}"`,
   );
   // TODO: Look into piping a list of files into diff to get a single diff result
-  const pathsToIgnoreInput: string = core.getInput('ignore');
+  const pathsToIgnoreInput: string = getInput('ignore');
   const pathsToIgnore: string[] = pathsToIgnoreInput?.split(',') || [];
   const resultsFromMultipleDiffs = await Promise.all(
     listOfFilesToDiff.map(async (topLevelPath) => {
@@ -93,16 +93,14 @@ export async function checkForTopLevelChanges(
 
   // Check functions settings in firebase.json
   if (firebaseJson) {
-    core.info('Checking for changes in firebase.json');
+    info('Checking for changes in firebase.json');
     const cachedFirebaseJson = await loadFirebaseJson(localCacheFolder);
     const functionsConfigsChanged = !isEqual(
       firebaseJson?.functions,
       cachedFirebaseJson?.functions,
     );
     if (functionsConfigsChanged) {
-      core.info(
-        'firebase.json functions settings changed, deploying all functions',
-      );
+      info('firebase.json functions settings changed, deploying all functions');
       return true;
     }
   }
@@ -118,18 +116,18 @@ export async function checkForTopLevelChanges(
     );
     const topLevelFilesChanged = !!listOfChangedTopLevelFiles.filter(Boolean)
       .length;
-    core.info(
+    info(
       `List of changed top level files: ${listOfChangedTopLevelFiles.join(
         '\n',
       )}`,
     );
     if (topLevelFilesChanged) {
-      core.info(`Global files changed, deploying all functions`);
+      info(`Global files changed, deploying all functions`);
       return true;
     }
-    core.info('No global files changed in functions');
+    info('No global files changed in functions');
   } else {
-    core.info('No global files to check');
+    info('No global files to check');
   }
   return false;
 }
@@ -195,7 +193,7 @@ export async function downloadCache(
   // TODO: Look into creating a list of files and piping them to the stdin of gsutil
   try {
     const srcPath = `${storageBaseUrl}/${cacheFolder}`;
-    core.info(`Downloading cache from: "${srcPath}" to "${localCacheFolder}"`);
+    info(`Downloading cache from: "${srcPath}" to "${localCacheFolder}"`);
     await exec(
       'gsutil',
       gsutilDefaultArgs.concat(['cp', '-r', srcPath, `${localCacheFolder}/`]),
