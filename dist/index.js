@@ -1114,7 +1114,7 @@ function checkForDiff(listOfFilesToDiff, options) {
             }
             catch (error) {
                 // NOTE: Error is thrown if there is a diff
-                core_1.info(`Diff found for path "${topLevelPath}": ${error.message}`);
+                core_1.info(`Diff found within path "${topLevelPath}"`);
             }
             // Example diff result:
             // "Files $cwd/functions/src/sendFcm/index.js and $cwd/local-functions-cache/current/src/sendFcm/index.js differ"
@@ -1695,8 +1695,7 @@ function run() {
             const changedFunctionsOnlyCommand = utils_1.onlyChangedFunctions(listOfChangedFiles);
             // TODO: Handle deleting of functions during update by checking if folder exists in src/dist
             // Add list of changed functions to deploy command (i.e. functions:myFunc)
-            if (changedFunctionsOnlyCommand === null || changedFunctionsOnlyCommand === void 0 ? void 0 : changedFunctionsOnlyCommand.length) {
-                core_1.info(`List of changed function files: ${listOfChangedFiles.join('\n')}`);
+            if (changedFunctionsOnlyCommand) {
                 deployArgs.push(changedFunctionsOnlyCommand);
             }
             else {
@@ -2011,7 +2010,7 @@ function onlyChangedFunctions(changedFiles) {
         // console.log('firebase deploy --except functions')
         return null;
     }
-    // log deploy command
+    core_1.info(`List of changed functions: ${uniqueDeployPathNames}`);
     const functionsStrings = uniqueDeployPathNames
         .map((pathName) => `functions:${pathName}`)
         .join(',');

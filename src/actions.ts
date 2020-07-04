@@ -63,7 +63,7 @@ export async function checkForDiff(
         );
       } catch (error) {
         // NOTE: Error is thrown if there is a diff
-        info(`Diff found for path "${topLevelPath}": ${error.message}`);
+        info(`Diff found within path "${topLevelPath}"`);
       }
       // Example diff result:
       // "Files $cwd/functions/src/sendFcm/index.js and $cwd/local-functions-cache/current/src/sendFcm/index.js differ"

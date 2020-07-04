@@ -1,4 +1,4 @@
-import { warning } from '@actions/core';
+import { warning, info } from '@actions/core';
 import { mkdirP } from '@actions/io';
 import { promises as fs, existsSync } from 'fs';
 
@@ -94,7 +94,7 @@ export function onlyChangedFunctions(changedFiles: string[]): string | null {
     // console.log('firebase deploy --except functions')
     return null;
   }
-  // log deploy command
+  info(`List of changed functions: ${uniqueDeployPathNames}`);
   const functionsStrings = uniqueDeployPathNames
     .map((pathName) => `functions:${pathName}`)
     .join(',');

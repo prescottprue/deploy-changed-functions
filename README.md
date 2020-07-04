@@ -22,6 +22,21 @@ jobs:
         with:
           node-version: 12
 
+      - name: Get Yarn Cache
+        id: yarn-cache
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+
+      - name: Cache Dependencies
+        uses: actions/cache@v1
+        with:
+          path: ${{ steps.yarn-cache.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+
+      - name: Install Dependencies
+        run: |
+          yarn install --frozen-lockfile
+          yarn --cwd functions install --frozen-lockfile
+
       - name: Setup Google CLI
         uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
         with:

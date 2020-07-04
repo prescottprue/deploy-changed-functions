@@ -96,8 +96,7 @@ export default async function run(): Promise<void> {
 
     // TODO: Handle deleting of functions during update by checking if folder exists in src/dist
     // Add list of changed functions to deploy command (i.e. functions:myFunc)
-    if (changedFunctionsOnlyCommand?.length) {
-      info(`List of changed function files: ${listOfChangedFiles.join('\n')}`);
+    if (changedFunctionsOnlyCommand) {
       deployArgs.push(changedFunctionsOnlyCommand);
     } else {
       info('No functions source code changed');
