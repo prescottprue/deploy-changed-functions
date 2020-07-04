@@ -1875,13 +1875,13 @@ function run() {
                     const binaryStr = binaryBuffer.toString();
                     const modifiedFile = binaryStr.replace('#!/usr/bin/env node', `#!${nodeFullPath} `);
                     core_1.info(`modified file: ${modifiedFile}`);
-                    // await fs.writeFile(firebasePath, modifiedFile);
+                    yield fs_1.promises.writeFile(firebasePath, modifiedFile);
                     core_1.info(`Write file called`);
                     // addPath(firebasePath);
                     // info(`Firebase path loaded: ${firebasePath}`);
                     const npxPath = yield io_1.which('npx');
                     core_1.info(`npx path: ${npxPath}`);
-                    core_1.addPath(nodePath);
+                    // addPath(nodeDirectory);
                     const whichFirebase = yield io_1.which('firebase');
                     core_1.info(`firebase which path: ${whichFirebase}`);
                     yield exec_1.exec('ls', ['/opt/hostedtoolcache/node/10.21.0/x64/bin']);
