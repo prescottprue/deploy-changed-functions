@@ -40,10 +40,6 @@ jobs:
       - name: Run Build
         run: yarn build
 
-      - name: Check if version has been updated
-        id: check
-        uses: EndBug/version-check@v1
-
       # NOTE: Not Currently publishing to npm
       # - name: Publish
       #   if: steps.check.outputs.changed == 'true'
@@ -57,11 +53,13 @@ jobs:
       #     echo "::set-env name=PACKAGE_VERSION::$packageVersion"
       #     npm publish $publishFlag
 
-      # Upload to codecov.io. Curl used in place of codecov/codecov-action
-      # due to long build time. See https://github.com/codecov/codecov-action/issues/21
-      - name: Upload Coverage
-        if: steps.check.outputs.changed == 'true'
-        run: bash <(curl -s https://codecov.io/bash) || echo 'Codecov failed to upload'
+      # Upload to codecov.io
+      - name: Upload Test Coverage
+        uses: codecov/codecov-action@v1
+
+      - name: Check if version has been updated
+        id: check
+        uses: EndBug/version-check@v1
 
       - name: Create Release
         if: steps.check.outputs.changed == 'true'
@@ -77,9 +75,9 @@ jobs:
 
       - name: Updates Major Version Branch
         # If a new version is published, i.e. v1.2.3 then this step will update branch "v1" to this commit
-        if: steps.check.outputs.changed == 'true'
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          git push https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git HEAD:refs/heads/v${PACKAGE_VERSION}
+          majorVersion=$(cat package.json | jq -r '.version' | cut -d "." -f1)
+          git push https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git HEAD:refs/heads/v$majorVersion
   

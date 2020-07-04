@@ -46,8 +46,9 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/prescottprue/deploy-changed-functions.git"
+    "url": "https://github.com/prescottprue/deploy-changed-functions.git"
   },
+  "homepage": "https://github.com/prescottprue/deploy-changed-functions#readme",
   "bugs": {
     "url": "https://github.com/prescottprue/deploy-changed-functions/issues"
   },
