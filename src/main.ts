@@ -1,8 +1,8 @@
-import { info, getInput, setFailed } from '@actions/core';
+import { info, getInput, setFailed, setOutput } from '@actions/core';
 import { exec } from '@actions/exec';
 import * as toolCache from '@actions/tool-cache';
 import { which } from '@actions/io';
-import { promises as fs } from 'fs';
+// import { promises as fs } from 'fs';
 import {
   loadFirebaseJson,
   createLocalCacheFolder,
@@ -114,7 +114,7 @@ export default async function run(): Promise<void> {
         );
       } else {
         info(`Calling deploy with args: ${deployArgs.join(' ')}`);
-        // const firebaseCommand = `firebase`;
+        const firebaseCommand = `firebase`;
         const nodePath = toolCache.find('node', '10.x');
         // const firebaseBinPath = `${GITHUB_WORKSPACE}/node_modules/.bin/firebase`;
 
@@ -136,17 +136,19 @@ export default async function run(): Promise<void> {
         // info(`ls2: ${secondLsRes}`);
         // addPath(firebaseBinaryPath);
         // info(`Added to path`);
-        const nodeFullPath = `${nodePath}/bin/node`;
-        const firebasePath = `${GITHUB_WORKSPACE}/node_modules/.bin/firebase`;
-        const binaryBuffer = await fs.readFile(firebasePath);
-        const binaryStr = binaryBuffer.toString();
-        const modifiedFile = binaryStr.replace(
-          '#!/usr/bin/env node',
-          `#!${nodeFullPath} `,
-        );
-        info(`modified file: ${modifiedFile}`);
-        await fs.writeFile(firebasePath, modifiedFile);
-        info(`Write file called`);
+        // SHeebang mod
+        // const nodeFullPath = `${nodePath}/bin/node`;
+        // const firebasePath = `${GITHUB_WORKSPACE}/node_modules/.bin/firebase`;
+        // above was also used in execs
+        // const binaryBuffer = await fs.readFile(firebasePath);
+        // const binaryStr = binaryBuffer.toString();
+        // const modifiedFile = binaryStr.replace(
+        //   '#!/usr/bin/env node',
+        //   `#!${nodeFullPath} `,
+        // );
+        // info(`modified file: ${modifiedFile}`);
+        // await fs.writeFile(firebasePath, modifiedFile);
+        // info(`Write file called`);
         // addPath(firebasePath);
         // info(`Firebase path loaded: ${firebasePath}`);
         const npxPath = await which('npx');
@@ -156,12 +158,13 @@ export default async function run(): Promise<void> {
         const whichFirebase = await which('firebase');
         info(`firebase which path: ${whichFirebase}`);
         await exec('ls', ['/opt/hostedtoolcache/node/10.21.0/x64/bin']);
+        setOutput('only-command', changedFunctionsOnlyCommand);
         let deployCommandOutput = '';
         // const cwd = homedir();
         // Call deploy command with listener for output (so that in case of failure,
         // it can be parsed for a list of functions which must be re-deployed)
         const deployExitCode = await exec(
-          firebasePath,
+          firebaseCommand,
           [...deployArgs, '--project', projectId],
           {
             listeners: {
@@ -191,7 +194,7 @@ export default async function run(): Promise<void> {
             const newDeployCommand = searchResults && searchResults[1];
             let secondDeployOutput = '';
             const secondDeployExitCode = await exec(
-              firebasePath,
+              firebaseCommand,
               [...(newDeployCommand?.split(' ') || [])],
               {
                 listeners: {

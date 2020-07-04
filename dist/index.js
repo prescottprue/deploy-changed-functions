@@ -1771,7 +1771,7 @@ const core_1 = __webpack_require__(470);
 const exec_1 = __webpack_require__(986);
 const toolCache = __importStar(__webpack_require__(533));
 const io_1 = __webpack_require__(1);
-const fs_1 = __webpack_require__(747);
+// import { promises as fs } from 'fs';
 const utils_1 = __webpack_require__(163);
 const actions_1 = __webpack_require__(49);
 const DEFAULT_FUNCTIONS_FOLDER = 'functions';
@@ -1849,7 +1849,7 @@ function run() {
                 }
                 else {
                     core_1.info(`Calling deploy with args: ${deployArgs.join(' ')}`);
-                    // const firebaseCommand = `firebase`;
+                    const firebaseCommand = `firebase`;
                     const nodePath = toolCache.find('node', '10.x');
                     // const firebaseBinPath = `${GITHUB_WORKSPACE}/node_modules/.bin/firebase`;
                     core_1.info(`node path: ${nodePath}`);
@@ -1869,14 +1869,19 @@ function run() {
                     // info(`ls2: ${secondLsRes}`);
                     // addPath(firebaseBinaryPath);
                     // info(`Added to path`);
-                    const nodeFullPath = `${nodePath}/bin/node`;
-                    const firebasePath = `${GITHUB_WORKSPACE}/node_modules/.bin/firebase`;
-                    const binaryBuffer = yield fs_1.promises.readFile(firebasePath);
-                    const binaryStr = binaryBuffer.toString();
-                    const modifiedFile = binaryStr.replace('#!/usr/bin/env node', `#!${nodeFullPath} `);
-                    core_1.info(`modified file: ${modifiedFile}`);
-                    yield fs_1.promises.writeFile(firebasePath, modifiedFile);
-                    core_1.info(`Write file called`);
+                    // SHeebang mod
+                    // const nodeFullPath = `${nodePath}/bin/node`;
+                    // const firebasePath = `${GITHUB_WORKSPACE}/node_modules/.bin/firebase`;
+                    // above was also used in execs
+                    // const binaryBuffer = await fs.readFile(firebasePath);
+                    // const binaryStr = binaryBuffer.toString();
+                    // const modifiedFile = binaryStr.replace(
+                    //   '#!/usr/bin/env node',
+                    //   `#!${nodeFullPath} `,
+                    // );
+                    // info(`modified file: ${modifiedFile}`);
+                    // await fs.writeFile(firebasePath, modifiedFile);
+                    // info(`Write file called`);
                     // addPath(firebasePath);
                     // info(`Firebase path loaded: ${firebasePath}`);
                     const npxPath = yield io_1.which('npx');
@@ -1885,11 +1890,12 @@ function run() {
                     const whichFirebase = yield io_1.which('firebase');
                     core_1.info(`firebase which path: ${whichFirebase}`);
                     yield exec_1.exec('ls', ['/opt/hostedtoolcache/node/10.21.0/x64/bin']);
+                    core_1.setOutput('only-command', changedFunctionsOnlyCommand);
                     let deployCommandOutput = '';
                     // const cwd = homedir();
                     // Call deploy command with listener for output (so that in case of failure,
                     // it can be parsed for a list of functions which must be re-deployed)
-                    const deployExitCode = yield exec_1.exec(firebasePath, [...deployArgs, '--project', projectId], {
+                    const deployExitCode = yield exec_1.exec(firebaseCommand, [...deployArgs, '--project', projectId], {
                         listeners: {
                             stdout: (data) => {
                                 deployCommandOutput += data.toString();
@@ -1909,7 +1915,7 @@ function run() {
                             const searchResults = /To try redeploying those functions, run:\n\s*firebase\s(.*)/g.exec(deployCommandOutput);
                             const newDeployCommand = searchResults && searchResults[1];
                             let secondDeployOutput = '';
-                            const secondDeployExitCode = yield exec_1.exec(firebasePath, [...((newDeployCommand === null || newDeployCommand === void 0 ? void 0 : newDeployCommand.split(' ')) || [])], {
+                            const secondDeployExitCode = yield exec_1.exec(firebaseCommand, [...((newDeployCommand === null || newDeployCommand === void 0 ? void 0 : newDeployCommand.split(' ')) || [])], {
                                 listeners: {
                                     stdout: (data) => {
                                         secondDeployOutput += data.toString();
