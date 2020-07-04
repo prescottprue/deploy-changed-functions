@@ -1850,7 +1850,7 @@ function run() {
                     core_1.info(`Calling deploy with args: ${deployArgs.join(' ')}`);
                     // const firebaseCommand = `firebase`;
                     const nodePath = toolCache.find('node', '10.x');
-                    const firebaseBinPath = `${GITHUB_WORKSPACE}/node_modules/.bin/firebase`;
+                    // const firebaseBinPath = `${GITHUB_WORKSPACE}/node_modules/.bin/firebase`;
                     core_1.info(`node path: ${nodePath}`);
                     const firebasePath = toolCache.find('firebase', '8.x');
                     core_1.info(`firebase path: ${firebasePath}`);
@@ -1877,7 +1877,7 @@ function run() {
                     core_1.info(`npx path: ${npxPath}`);
                     const whichFirebase = yield io_1.which('firebase');
                     core_1.info(`firebase which path: ${whichFirebase}`);
-                    yield exec_1.exec('ls', ['/opt/hostedtoolcache/node/10.21.0/x64']);
+                    yield exec_1.exec('ls', ['/opt/hostedtoolcache/node/10.21.0/x64/bin']);
                     let deployCommandOutput = '';
                     // const cwd = homedir();
                     // Call deploy command with listener for output (so that in case of failure,
