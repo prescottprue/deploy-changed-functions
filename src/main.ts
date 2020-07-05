@@ -3,7 +3,7 @@ import {
   getInput,
   setFailed,
   setOutput,
-  // addPath,
+  addPath,
   debug,
 } from '@actions/core';
 import { exec } from '@actions/exec';
@@ -169,6 +169,8 @@ export default async function run(): Promise<void> {
         // const firebaseBinPath = `${GITHUB_WORKSPACE}/node_modules/.bin/firebase`;
 
         info(`node path: ${nodePath}`);
+        addPath(nodePath);
+        info(`added node path to path`);
 
         // Downloading Firebase binary
         // const firebaseBinaryPath = `${GITHUB_WORKSPACE}/firebase_bin`;

@@ -1886,6 +1886,8 @@ function run() {
                     const nodePath = toolCache.find('node', '10.x');
                     // const firebaseBinPath = `${GITHUB_WORKSPACE}/node_modules/.bin/firebase`;
                     core_1.info(`node path: ${nodePath}`);
+                    core_1.addPath(nodePath);
+                    core_1.info(`added node path to path`);
                     // Downloading Firebase binary
                     // const firebaseBinaryPath = `${GITHUB_WORKSPACE}/firebase_bin`;
                     // info(`Downloading firebase binary`);
