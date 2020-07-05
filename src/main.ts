@@ -224,10 +224,10 @@ export default async function run(): Promise<void> {
 
         // const whichFirebase = await which('firebase');
         // info(`firebase which path: ${whichFirebase}`);
-        setOutput('only-command', changedFunctionsOnlyCommand);
+        // setOutput('only-command', changedFunctionsOnlyCommand);
+
         let deployCommandOutput = '';
         addPath(firebaseBinaryPath);
-        info(`process env path: ${process.env.PATH}`);
 
         // const cwd = homedir();
         // Call deploy command with listener for output (so that in case of failure,

@@ -1938,10 +1938,9 @@ function run() {
                     // addPath(nodeDirectory);
                     // const whichFirebase = await which('firebase');
                     // info(`firebase which path: ${whichFirebase}`);
-                    core_1.setOutput('only-command', changedFunctionsOnlyCommand);
+                    // setOutput('only-command', changedFunctionsOnlyCommand);
                     let deployCommandOutput = '';
                     core_1.addPath(firebaseBinaryPath);
-                    core_1.info(`process env path: ${process.env.PATH}`);
                     // const cwd = homedir();
                     // Call deploy command with listener for output (so that in case of failure,
                     // it can be parsed for a list of functions which must be re-deployed)
