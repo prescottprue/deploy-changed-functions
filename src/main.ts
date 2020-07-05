@@ -192,12 +192,14 @@ export default async function run(): Promise<void> {
         // info(`Added firebase binary to path`);
 
         // Get yarn bin to find firebase command
-        const yarnBinUntrimmed = await runCommandWithOutput('yarn', ['bin']);
-        info(`Untrimmed yarn bin: ${yarnBinUntrimmed}`);
-        const yarnBin = yarnBinUntrimmed.replace('\n', '');
-        info(`Yarn bin: ${yarnBin}`);
-        const firebaseCommand = `${yarnBin}/firebase`;
+        const untrimmedNpmBin = await runCommandWithOutput('npm', ['bin']);
+        info(`Untrimmed yarn bin: ${untrimmedNpmBin}`);
+        const npmBinPath = untrimmedNpmBin.replace('\n', '');
+        info(`Yarn bin: ${npmBinPath}`);
+        const firebaseCommand = `${npmBinPath}/firebase`;
         info(`Command with bin path: ${firebaseCommand}`);
+        info(`Running ls on npm bin path`);
+        await exec('ls', [npmBinPath]);
 
         // SHeebang mod
         // const nodeFullPath = `${nodePath}/bin/node`;

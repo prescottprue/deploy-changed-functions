@@ -1907,12 +1907,14 @@ function run() {
                     // // addPath(firebaseBinaryPath);
                     // info(`Added firebase binary to path`);
                     // Get yarn bin to find firebase command
-                    const yarnBinUntrimmed = yield runCommandWithOutput('yarn', ['bin']);
-                    core_1.info(`Untrimmed yarn bin: ${yarnBinUntrimmed}`);
-                    const yarnBin = yarnBinUntrimmed.replace('\n', '');
-                    core_1.info(`Yarn bin: ${yarnBin}`);
-                    const firebaseCommand = `${yarnBin}/firebase`;
+                    const untrimmedNpmBin = yield runCommandWithOutput('npm', ['bin']);
+                    core_1.info(`Untrimmed yarn bin: ${untrimmedNpmBin}`);
+                    const npmBinPath = untrimmedNpmBin.replace('\n', '');
+                    core_1.info(`Yarn bin: ${npmBinPath}`);
+                    const firebaseCommand = `${npmBinPath}/firebase`;
                     core_1.info(`Command with bin path: ${firebaseCommand}`);
+                    core_1.info(`Running ls on npm bin path`);
+                    yield exec_1.exec('ls', [npmBinPath]);
                     // SHeebang mod
                     // const nodeFullPath = `${nodePath}/bin/node`;
                     // const firebasePath = `${GITHUB_WORKSPACE}/node_modules/.bin/firebase`;
