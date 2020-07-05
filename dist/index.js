@@ -1913,12 +1913,11 @@ function run() {
                     core_1.info(`Untrimmed yarn bin: ${untrimmedNpmBin}`);
                     const npmBinPath = untrimmedNpmBin.replace('\n', '');
                     core_1.info(`Yarn bin: ${npmBinPath}`);
-                    const firebaseCommand = `${npmBinPath}/firebase`;
+                    const firebaseCommand = `${__dirname}/call_fb`;
                     core_1.info(`Command with bin path: ${firebaseCommand}`);
                     core_1.info(`Running ls on npm bin path`);
                     yield exec_1.exec('ls', [npmBinPath]);
                     core_1.info(`Calling firebase through shell`);
-                    yield exec_1.exec(`${__dirname}/call_fb`);
                     // SHeebang mod
                     // const nodeFullPath = `${nodePath}/bin/node`;
                     // const firebasePath = `${GITHUB_WORKSPACE}/node_modules/.bin/firebase`;
@@ -1944,7 +1943,7 @@ function run() {
                     // const cwd = homedir();
                     // Call deploy command with listener for output (so that in case of failure,
                     // it can be parsed for a list of functions which must be re-deployed)
-                    const deployExitCode = yield exec_1.exec(nodePath, [firebaseCommand, ...deployArgs, '--project', projectId], {
+                    const deployExitCode = yield exec_1.exec(firebaseCommand, [...deployArgs, '--project', projectId], {
                         listeners: {
                             stdout: (data) => {
                                 deployCommandOutput += data.toString();

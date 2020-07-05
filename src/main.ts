@@ -198,12 +198,11 @@ export default async function run(): Promise<void> {
         info(`Untrimmed yarn bin: ${untrimmedNpmBin}`);
         const npmBinPath = untrimmedNpmBin.replace('\n', '');
         info(`Yarn bin: ${npmBinPath}`);
-        const firebaseCommand = `${npmBinPath}/firebase`;
+        const firebaseCommand = `${__dirname}/call_fb`;
         info(`Command with bin path: ${firebaseCommand}`);
         info(`Running ls on npm bin path`);
         await exec('ls', [npmBinPath]);
         info(`Calling firebase through shell`);
-        await exec(`${__dirname}/call_fb`);
         // SHeebang mod
         // const nodeFullPath = `${nodePath}/bin/node`;
         // const firebasePath = `${GITHUB_WORKSPACE}/node_modules/.bin/firebase`;
@@ -231,8 +230,8 @@ export default async function run(): Promise<void> {
         // Call deploy command with listener for output (so that in case of failure,
         // it can be parsed for a list of functions which must be re-deployed)
         const deployExitCode = await exec(
-          nodePath,
-          [firebaseCommand, ...deployArgs, '--project', projectId],
+          firebaseCommand,
+          [...deployArgs, '--project', projectId],
           {
             listeners: {
               stdout: (data: Buffer) => {

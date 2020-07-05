@@ -1,1 +1,1 @@
-$(npm bin)/firebase --help
+sh -c "$(npm bin)/firebase $*"
