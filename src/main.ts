@@ -161,7 +161,7 @@ export default async function run(): Promise<void> {
         // Call deploy command with listener for output (so that in case of failure,
         // it can be parsed for a list of functions which must be re-deployed)
         const deployExitCode = await exec(
-          firebaseCommand,
+          firebaseBinaryPath,
           [...deployArgs, '--project', projectId],
           {
             listeners: {
@@ -191,7 +191,7 @@ export default async function run(): Promise<void> {
             const newDeployCommand = searchResults && searchResults[1];
             let secondDeployOutput = '';
             const secondDeployExitCode = await exec(
-              firebaseCommand,
+              firebaseBinaryPath,
               [...(newDeployCommand?.split(' ') || [])],
               {
                 listeners: {
