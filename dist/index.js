@@ -1853,22 +1853,19 @@ function run() {
                     const nodePath = toolCache.find('node', '10.x');
                     // const firebaseBinPath = `${GITHUB_WORKSPACE}/node_modules/.bin/firebase`;
                     core_1.info(`node path: ${nodePath}`);
-                    // const firebaseBinaryPath = `${GITHUB_WORKSPACE}/firebase_bin`;
-                    // info(`Downloading firebase binary`);
-                    // await exec('curl', [
-                    //   '-Lo',
-                    //   firebaseBinaryPath,
-                    //   'https://firebase.tools/bin/linux/v7.2.2',
-                    // ]);
-                    // info(`Downloaded firebase binary, making executable`);
-                    // await exec('chmod', ['+x', firebaseBinaryPath]);
-                    // info(`Chmod successful, adding to path`);
-                    // const firstLsRes = await exec('ls', [GITHUB_WORKSPACE || '']);
-                    // info(`ls: ${firstLsRes}`);
-                    // const secondLsRes = await exec('ls', [firebaseBinaryPath]);
-                    // info(`ls2: ${secondLsRes}`);
-                    // addPath(firebaseBinaryPath);
-                    // info(`Added to path`);
+                    // Downloading Firebase binary
+                    const firebaseBinaryPath = `${GITHUB_WORKSPACE}/firebase_bin`;
+                    core_1.info(`Downloading firebase binary`);
+                    yield exec_1.exec('curl', [
+                        '-Lo',
+                        firebaseBinaryPath,
+                        'https://firebase.tools/bin/linux/v7.2.2',
+                    ]);
+                    core_1.info(`Downloaded firebase binary, making executable`);
+                    yield exec_1.exec('chmod', ['+x', firebaseBinaryPath]);
+                    core_1.info(`Chmod successful, adding to path`);
+                    core_1.addPath(firebaseBinaryPath);
+                    core_1.info(`Added firebase binary to path`);
                     // SHeebang mod
                     // const nodeFullPath = `${nodePath}/bin/node`;
                     // const firebasePath = `${GITHUB_WORKSPACE}/node_modules/.bin/firebase`;
@@ -1889,7 +1886,6 @@ function run() {
                     // addPath(nodeDirectory);
                     const whichFirebase = yield io_1.which('firebase');
                     core_1.info(`firebase which path: ${whichFirebase}`);
-                    yield exec_1.exec('ls', ['/opt/hostedtoolcache/node/10.21.0/x64/bin']);
                     core_1.setOutput('only-command', changedFunctionsOnlyCommand);
                     let deployCommandOutput = '';
                     // const cwd = homedir();

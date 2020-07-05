@@ -20,5 +20,5 @@ inputs:
   storage-bucket:
     description: 'Cloud Storage Bucket'
 runs:
-  using: 'node10'
+  using: 'node12'
   main: 'dist/index.js'

@@ -1,4 +1,4 @@
-import { info, getInput, setFailed, setOutput } from '@actions/core';
+import { info, getInput, setFailed, setOutput, addPath } from '@actions/core';
 import { exec } from '@actions/exec';
 import * as toolCache from '@actions/tool-cache';
 import { which } from '@actions/io';
@@ -120,22 +120,20 @@ export default async function run(): Promise<void> {
 
         info(`node path: ${nodePath}`);
 
-        // const firebaseBinaryPath = `${GITHUB_WORKSPACE}/firebase_bin`;
-        // info(`Downloading firebase binary`);
-        // await exec('curl', [
-        //   '-Lo',
-        //   firebaseBinaryPath,
-        //   'https://firebase.tools/bin/linux/v7.2.2',
-        // ]);
-        // info(`Downloaded firebase binary, making executable`);
-        // await exec('chmod', ['+x', firebaseBinaryPath]);
-        // info(`Chmod successful, adding to path`);
-        // const firstLsRes = await exec('ls', [GITHUB_WORKSPACE || '']);
-        // info(`ls: ${firstLsRes}`);
-        // const secondLsRes = await exec('ls', [firebaseBinaryPath]);
-        // info(`ls2: ${secondLsRes}`);
-        // addPath(firebaseBinaryPath);
-        // info(`Added to path`);
+        // Downloading Firebase binary
+        const firebaseBinaryPath = `${GITHUB_WORKSPACE}/firebase_bin`;
+        info(`Downloading firebase binary`);
+        await exec('curl', [
+          '-Lo',
+          firebaseBinaryPath,
+          'https://firebase.tools/bin/linux/v7.2.2',
+        ]);
+        info(`Downloaded firebase binary, making executable`);
+        await exec('chmod', ['+x', firebaseBinaryPath]);
+        info(`Chmod successful, adding to path`);
+        addPath(firebaseBinaryPath);
+        info(`Added firebase binary to path`);
+
         // SHeebang mod
         // const nodeFullPath = `${nodePath}/bin/node`;
         // const firebasePath = `${GITHUB_WORKSPACE}/node_modules/.bin/firebase`;
@@ -157,7 +155,6 @@ export default async function run(): Promise<void> {
 
         const whichFirebase = await which('firebase');
         info(`firebase which path: ${whichFirebase}`);
-        await exec('ls', ['/opt/hostedtoolcache/node/10.21.0/x64/bin']);
         setOutput('only-command', changedFunctionsOnlyCommand);
         let deployCommandOutput = '';
         // const cwd = homedir();
