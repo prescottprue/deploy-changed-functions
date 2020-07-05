@@ -1,7 +1,7 @@
 import { info, getInput, setFailed, setOutput, addPath } from '@actions/core';
 import { exec } from '@actions/exec';
 import * as toolCache from '@actions/tool-cache';
-import { which } from '@actions/io';
+// import { which } from '@actions/io';
 // import { promises as fs } from 'fs';
 import {
   loadFirebaseJson,
@@ -149,12 +149,12 @@ export default async function run(): Promise<void> {
         // info(`Write file called`);
         // addPath(firebasePath);
         // info(`Firebase path loaded: ${firebasePath}`);
-        const npxPath = await which('npx');
-        info(`npx path: ${npxPath}`);
+        // const npxPath = await which('npx');
+        // info(`npx path: ${npxPath}`);
         // addPath(nodeDirectory);
 
-        const whichFirebase = await which('firebase');
-        info(`firebase which path: ${whichFirebase}`);
+        // const whichFirebase = await which('firebase');
+        // info(`firebase which path: ${whichFirebase}`);
         setOutput('only-command', changedFunctionsOnlyCommand);
         let deployCommandOutput = '';
         // const cwd = homedir();
