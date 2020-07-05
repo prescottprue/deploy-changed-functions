@@ -1859,12 +1859,15 @@ function run() {
                     yield exec_1.exec('curl', [
                         '-Lo',
                         firebaseBinaryPath,
-                        'https://firebase.tools/bin/linux/v7.2.2',
+                        'https://firebase.tools/bin/linux/v8.4.3',
                     ]);
                     core_1.info(`Downloaded firebase binary, making executable`);
                     yield exec_1.exec('chmod', ['+x', firebaseBinaryPath]);
-                    core_1.info(`Chmod successful, adding to path`);
-                    core_1.addPath(firebaseBinaryPath);
+                    core_1.info(`Chmod successful, adding to cache dir`);
+                    const cachedPath = yield toolCache.cacheDir(firebaseBinaryPath, 'firebase', '8.4.3');
+                    core_1.info(`Added firebase binary to cache dir, adding cache dir to path`);
+                    core_1.addPath(cachedPath);
+                    // addPath(firebaseBinaryPath);
                     core_1.info(`Added firebase binary to path`);
                     // SHeebang mod
                     // const nodeFullPath = `${nodePath}/bin/node`;

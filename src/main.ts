@@ -126,12 +126,19 @@ export default async function run(): Promise<void> {
         await exec('curl', [
           '-Lo',
           firebaseBinaryPath,
-          'https://firebase.tools/bin/linux/v7.2.2',
+          'https://firebase.tools/bin/linux/v8.4.3',
         ]);
         info(`Downloaded firebase binary, making executable`);
         await exec('chmod', ['+x', firebaseBinaryPath]);
-        info(`Chmod successful, adding to path`);
-        addPath(firebaseBinaryPath);
+        info(`Chmod successful, adding to cache dir`);
+        const cachedPath = await toolCache.cacheDir(
+          firebaseBinaryPath,
+          'firebase',
+          '8.4.3',
+        );
+        info(`Added firebase binary to cache dir, adding cache dir to path`);
+        addPath(cachedPath);
+        // addPath(firebaseBinaryPath);
         info(`Added firebase binary to path`);
 
         // SHeebang mod
