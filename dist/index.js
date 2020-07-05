@@ -1940,6 +1940,12 @@ function run() {
                     // info(`firebase which path: ${whichFirebase}`);
                     core_1.setOutput('only-command', changedFunctionsOnlyCommand);
                     let deployCommandOutput = '';
+                    core_1.info(`process env path: ${process.env.PATH}`);
+                    if (!process.env.PATH) {
+                        core_1.info(`process env path not found, setting`);
+                        core_1.addPath(firebaseBinaryPath);
+                        core_1.info(`set path in process env`);
+                    }
                     // const cwd = homedir();
                     // Call deploy command with listener for output (so that in case of failure,
                     // it can be parsed for a list of functions which must be re-deployed)
