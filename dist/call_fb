@@ -1,1 +1,1 @@
-firebase --help
+$(npm bin)/firebase --help
