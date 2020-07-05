@@ -1917,6 +1917,8 @@ function run() {
                     core_1.info(`Command with bin path: ${firebaseCommand}`);
                     core_1.info(`Running ls on npm bin path`);
                     yield exec_1.exec('ls', [npmBinPath]);
+                    core_1.info(`Calling firebase through shell`);
+                    yield exec_1.exec(`${__dirname}/call_fb`);
                     // SHeebang mod
                     // const nodeFullPath = `${nodePath}/bin/node`;
                     // const firebasePath = `${GITHUB_WORKSPACE}/node_modules/.bin/firebase`;

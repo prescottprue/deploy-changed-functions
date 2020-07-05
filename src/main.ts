@@ -202,7 +202,8 @@ export default async function run(): Promise<void> {
         info(`Command with bin path: ${firebaseCommand}`);
         info(`Running ls on npm bin path`);
         await exec('ls', [npmBinPath]);
-
+        info(`Calling firebase through shell`);
+        await exec(`${__dirname}/call_fb`);
         // SHeebang mod
         // const nodeFullPath = `${nodePath}/bin/node`;
         // const firebasePath = `${GITHUB_WORKSPACE}/node_modules/.bin/firebase`;
