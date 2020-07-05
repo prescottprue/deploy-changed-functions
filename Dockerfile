@@ -18,5 +18,5 @@ RUN npm install -g firebase-tools
 COPY LICENSE README.md /
 COPY "dist" "."
 
-ENTRYPOINT ["node", "dist/index.js"]
+ENTRYPOINT ["node", "./dist/index.js"]
 CMD ["--help"]
