@@ -234,7 +234,7 @@ export default async function run(): Promise<void> {
         // it can be parsed for a list of functions which must be re-deployed)
         const deployExitCode = await exec(
           firebaseBinaryPath,
-          ['deploy', '--project', projectId],
+          ['deploy', '--project', projectId, '--debug'],
           {
             listeners: {
               stdout: (data: Buffer) => {
