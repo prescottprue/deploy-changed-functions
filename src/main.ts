@@ -226,18 +226,15 @@ export default async function run(): Promise<void> {
         // info(`firebase which path: ${whichFirebase}`);
         setOutput('only-command', changedFunctionsOnlyCommand);
         let deployCommandOutput = '';
+        addPath(firebaseBinaryPath);
         info(`process env path: ${process.env.PATH}`);
-        if (!process.env.PATH) {
-          info(`process env path not found, setting`);
-          addPath(firebaseBinaryPath);
-          info(`set path in process env`);
-        }
+
         // const cwd = homedir();
         // Call deploy command with listener for output (so that in case of failure,
         // it can be parsed for a list of functions which must be re-deployed)
         const deployExitCode = await exec(
           firebaseBinaryPath,
-          [...deployArgs, '--project', projectId],
+          ['deploy', '--project', projectId],
           {
             listeners: {
               stdout: (data: Buffer) => {
