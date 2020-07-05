@@ -1899,9 +1899,13 @@ function run() {
                     core_1.info(`Downloaded firebase binary, making executable`);
                     yield exec_1.exec('chmod', ['+x', firebaseBinaryPath]);
                     core_1.info(`Chmod successful, adding to cache dir`);
-                    const cachedPath = yield toolCache.cacheDir(firebaseBinaryPath, 'firebase', '8.4.3');
+                    // const cachedPath = await toolCache.cacheDir(
+                    //   firebaseBinaryPath,
+                    //   'firebase',
+                    //   '8.4.3',
+                    // );
                     // info(`Added firebase binary to cache dir, adding cache dir to path`);
-                    core_1.addPath(cachedPath);
+                    // addPath(cachedPath);
                     // addPath(firebaseBinaryPath);
                     // info(`Added firebase binary to path`);
                     // Get yarn bin to find firebase command

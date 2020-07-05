@@ -183,13 +183,13 @@ export default async function run(): Promise<void> {
         info(`Downloaded firebase binary, making executable`);
         await exec('chmod', ['+x', firebaseBinaryPath]);
         info(`Chmod successful, adding to cache dir`);
-        const cachedPath = await toolCache.cacheDir(
-          firebaseBinaryPath,
-          'firebase',
-          '8.4.3',
-        );
+        // const cachedPath = await toolCache.cacheDir(
+        //   firebaseBinaryPath,
+        //   'firebase',
+        //   '8.4.3',
+        // );
         // info(`Added firebase binary to cache dir, adding cache dir to path`);
-        addPath(cachedPath);
+        // addPath(cachedPath);
         // addPath(firebaseBinaryPath);
         // info(`Added firebase binary to path`);
 
