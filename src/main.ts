@@ -230,8 +230,8 @@ export default async function run(): Promise<void> {
         // Call deploy command with listener for output (so that in case of failure,
         // it can be parsed for a list of functions which must be re-deployed)
         const deployExitCode = await exec(
-          'node',
-          [`${npmBinPath}/firebase`, ...deployArgs, '--project', projectId],
+          'firebase',
+          [...deployArgs, '--project', projectId],
           {
             listeners: {
               stdout: (data: Buffer) => {
@@ -260,8 +260,8 @@ export default async function run(): Promise<void> {
             const newDeployCommand = searchResults && searchResults[1];
             let secondDeployOutput = '';
             const secondDeployExitCode = await exec(
-              nodePath,
-              [firebaseCommand, ...(newDeployCommand?.split(' ') || [])],
+              'firebase',
+              [...(newDeployCommand?.split(' ') || [])],
               {
                 listeners: {
                   stdout: (data: Buffer) => {
