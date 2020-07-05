@@ -1907,7 +1907,10 @@ function run() {
                     // // addPath(firebaseBinaryPath);
                     // info(`Added firebase binary to path`);
                     // Get yarn bin to find firebase command
-                    const yarnBin = yield runCommandWithOutput('yarn', ['bin']);
+                    const yarnBinUntrimmed = yield runCommandWithOutput('yarn', ['bin']);
+                    core_1.info(`Untrimmed yarn bin: ${yarnBinUntrimmed}`);
+                    const yarnBin = yarnBinUntrimmed.replace('\n', '');
+                    core_1.info(`Yarn bin: ${yarnBin}`);
                     const firebaseCommand = `${yarnBin}/firebase`;
                     core_1.info(`Command with bin path: ${firebaseCommand}`);
                     // SHeebang mod

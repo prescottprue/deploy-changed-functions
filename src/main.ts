@@ -192,7 +192,10 @@ export default async function run(): Promise<void> {
         // info(`Added firebase binary to path`);
 
         // Get yarn bin to find firebase command
-        const yarnBin = await runCommandWithOutput('yarn', ['bin']);
+        const yarnBinUntrimmed = await runCommandWithOutput('yarn', ['bin']);
+        info(`Untrimmed yarn bin: ${yarnBinUntrimmed}`);
+        const yarnBin = yarnBinUntrimmed.replace('\n', '');
+        info(`Yarn bin: ${yarnBin}`);
         const firebaseCommand = `${yarnBin}/firebase`;
         info(`Command with bin path: ${firebaseCommand}`);
 
