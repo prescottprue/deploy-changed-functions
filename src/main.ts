@@ -2,7 +2,7 @@ import {
   info,
   getInput,
   setFailed,
-  setOutput,
+  // setOutput,
   addPath,
   debug,
 } from '@actions/core';
@@ -17,7 +17,7 @@ import {
 } from './utils';
 import {
   downloadCache,
-  writeCache,
+  // writeCache,
   checkForDiff,
   checkForTopLevelChanges,
 } from './actions';
@@ -287,13 +287,13 @@ export default async function run(): Promise<void> {
     }
 
     // Re-upload files to cache
-    const listOfFilesToUpload = [...topLevelFilesToCheck, 'src'];
+    // const listOfFilesToUpload = [...topLevelFilesToCheck, 'src'];
 
-    await writeCache(listOfFilesToUpload, {
-      functionsFolder,
-      storagePath: `${storageBaseUrl}/${cacheFolder}`,
-      firebaseJson,
-    });
+    // await writeCache(listOfFilesToUpload, {
+    //   functionsFolder,
+    //   storagePath: `${storageBaseUrl}/${cacheFolder}`,
+    //   firebaseJson,
+    // });
   } catch (error) {
     setFailed(error.message);
   }

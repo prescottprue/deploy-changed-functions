@@ -1984,12 +1984,12 @@ function run() {
                 }
             }
             // Re-upload files to cache
-            const listOfFilesToUpload = [...topLevelFilesToCheck, 'src'];
-            yield actions_1.writeCache(listOfFilesToUpload, {
-                functionsFolder,
-                storagePath: `${storageBaseUrl}/${cacheFolder}`,
-                firebaseJson,
-            });
+            // const listOfFilesToUpload = [...topLevelFilesToCheck, 'src'];
+            // await writeCache(listOfFilesToUpload, {
+            //   functionsFolder,
+            //   storagePath: `${storageBaseUrl}/${cacheFolder}`,
+            //   firebaseJson,
+            // });
         }
         catch (error) {
             core_1.setFailed(error.message);
