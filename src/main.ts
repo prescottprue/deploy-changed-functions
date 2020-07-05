@@ -1,7 +1,14 @@
-import { info, getInput, setFailed, setOutput, addPath } from '@actions/core';
+import {
+  info,
+  getInput,
+  setFailed,
+  setOutput,
+  // addPath,
+  debug,
+} from '@actions/core';
 import { exec } from '@actions/exec';
 import * as toolCache from '@actions/tool-cache';
-// import { which } from '@actions/io';
+import { which } from '@actions/io';
 // import { promises as fs } from 'fs';
 import {
   loadFirebaseJson,
@@ -18,6 +25,50 @@ import {
 const DEFAULT_FUNCTIONS_FOLDER = 'functions';
 const DEFAULT_STORAGE_FOLDER = 'functions_deploy_cache';
 const DEFAULT_LOCAL_CACHE_FOLDER = 'local_functions_cache';
+
+interface RunCommandOptions {
+  failOnStdErr?: boolean;
+  env?: any;
+}
+
+/**
+ * @param command
+ * @param args
+ * @param options
+ */
+async function runCommandWithOutput(
+  command: string,
+  args: string[],
+  options?: RunCommandOptions,
+) {
+  console.log('command "%s"', command);
+  debug(`parsed command: ${args.join(' ')}`);
+
+  const toolPath = await which(command, true);
+  debug(`found command "${toolPath}"`);
+  debug(`with arguments ${args.slice(1).join(' ')}`);
+
+  const argsString = args.join(' ');
+  debug(`running ${toolPath} ${argsString}`);
+  debug('without waiting for the promise to resolve');
+  let commandOutput = '';
+  try {
+    await exec(toolPath, args, {
+      listeners: {
+        stdout: (data: Buffer) => {
+          commandOutput += data.toString();
+        },
+      },
+      env: options?.env,
+      failOnStdErr: options?.failOnStdErr || true,
+      // cwd: GITHUB_WORKSPACE,
+    });
+  } catch (err) {
+    info(`Non 0 exit code for command "${command} ${argsString}"`);
+  }
+  debug(`command output ${commandOutput}`);
+  return commandOutput;
+}
 
 /**
  * Run deploy-changed-functions logic
@@ -114,32 +165,36 @@ export default async function run(): Promise<void> {
         );
       } else {
         info(`Calling deploy with args: ${deployArgs.join(' ')}`);
-        const firebaseCommand = `firebase`;
         const nodePath = toolCache.find('node', '10.x');
         // const firebaseBinPath = `${GITHUB_WORKSPACE}/node_modules/.bin/firebase`;
 
         info(`node path: ${nodePath}`);
 
         // Downloading Firebase binary
-        const firebaseBinaryPath = `${GITHUB_WORKSPACE}/firebase_bin`;
-        info(`Downloading firebase binary`);
-        await exec('curl', [
-          '-Lo',
-          firebaseBinaryPath,
-          'https://firebase.tools/bin/linux/v8.4.3',
-        ]);
-        info(`Downloaded firebase binary, making executable`);
-        await exec('chmod', ['+x', firebaseBinaryPath]);
-        info(`Chmod successful, adding to cache dir`);
-        const cachedPath = await toolCache.cacheDir(
-          firebaseBinaryPath,
-          'firebase',
-          '8.4.3',
-        );
-        info(`Added firebase binary to cache dir, adding cache dir to path`);
-        addPath(cachedPath);
-        // addPath(firebaseBinaryPath);
-        info(`Added firebase binary to path`);
+        // const firebaseBinaryPath = `${GITHUB_WORKSPACE}/firebase_bin`;
+        // info(`Downloading firebase binary`);
+        // await exec('curl', [
+        //   '-Lo',
+        //   firebaseBinaryPath,
+        //   'https://firebase.tools/bin/linux/v8.4.3',
+        // ]);
+        // info(`Downloaded firebase binary, making executable`);
+        // await exec('chmod', ['+x', firebaseBinaryPath]);
+        // info(`Chmod successful, adding to cache dir`);
+        // const cachedPath = await toolCache.cacheDir(
+        //   firebaseBinaryPath,
+        //   'firebase',
+        //   '8.4.3',
+        // );
+        // info(`Added firebase binary to cache dir, adding cache dir to path`);
+        // addPath(cachedPath);
+        // // addPath(firebaseBinaryPath);
+        // info(`Added firebase binary to path`);
+
+        // Get yarn bin to find firebase command
+        const yarnBin = await runCommandWithOutput('yarn', ['bin']);
+        const firebaseCommand = `${yarnBin}/firebase`;
+        info(`Command with bin path: ${firebaseCommand}`);
 
         // SHeebang mod
         // const nodeFullPath = `${nodePath}/bin/node`;
@@ -168,7 +223,7 @@ export default async function run(): Promise<void> {
         // Call deploy command with listener for output (so that in case of failure,
         // it can be parsed for a list of functions which must be re-deployed)
         const deployExitCode = await exec(
-          firebaseBinaryPath,
+          firebaseCommand,
           [...deployArgs, '--project', projectId],
           {
             listeners: {
@@ -198,7 +253,7 @@ export default async function run(): Promise<void> {
             const newDeployCommand = searchResults && searchResults[1];
             let secondDeployOutput = '';
             const secondDeployExitCode = await exec(
-              firebaseBinaryPath,
+              firebaseCommand,
               [...(newDeployCommand?.split(' ') || [])],
               {
                 listeners: {

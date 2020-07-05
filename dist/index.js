@@ -1770,13 +1770,47 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const core_1 = __webpack_require__(470);
 const exec_1 = __webpack_require__(986);
 const toolCache = __importStar(__webpack_require__(533));
-// import { which } from '@actions/io';
+const io_1 = __webpack_require__(1);
 // import { promises as fs } from 'fs';
 const utils_1 = __webpack_require__(163);
 const actions_1 = __webpack_require__(49);
 const DEFAULT_FUNCTIONS_FOLDER = 'functions';
 const DEFAULT_STORAGE_FOLDER = 'functions_deploy_cache';
 const DEFAULT_LOCAL_CACHE_FOLDER = 'local_functions_cache';
+/**
+ * @param command
+ * @param args
+ * @param options
+ */
+function runCommandWithOutput(command, args, options) {
+    return __awaiter(this, void 0, void 0, function* () {
+        console.log('command "%s"', command);
+        core_1.debug(`parsed command: ${args.join(' ')}`);
+        const toolPath = yield io_1.which(command, true);
+        core_1.debug(`found command "${toolPath}"`);
+        core_1.debug(`with arguments ${args.slice(1).join(' ')}`);
+        const argsString = args.join(' ');
+        core_1.debug(`running ${toolPath} ${argsString}`);
+        core_1.debug('without waiting for the promise to resolve');
+        let commandOutput = '';
+        try {
+            yield exec_1.exec(toolPath, args, {
+                listeners: {
+                    stdout: (data) => {
+                        commandOutput += data.toString();
+                    },
+                },
+                env: options === null || options === void 0 ? void 0 : options.env,
+                failOnStdErr: (options === null || options === void 0 ? void 0 : options.failOnStdErr) || true,
+            });
+        }
+        catch (err) {
+            core_1.info(`Non 0 exit code for command "${command} ${argsString}"`);
+        }
+        core_1.debug(`command output ${commandOutput}`);
+        return commandOutput;
+    });
+}
 /**
  * Run deploy-changed-functions logic
  */
@@ -1849,26 +1883,33 @@ function run() {
                 }
                 else {
                     core_1.info(`Calling deploy with args: ${deployArgs.join(' ')}`);
-                    const firebaseCommand = `firebase`;
                     const nodePath = toolCache.find('node', '10.x');
                     // const firebaseBinPath = `${GITHUB_WORKSPACE}/node_modules/.bin/firebase`;
                     core_1.info(`node path: ${nodePath}`);
                     // Downloading Firebase binary
-                    const firebaseBinaryPath = `${GITHUB_WORKSPACE}/firebase_bin`;
-                    core_1.info(`Downloading firebase binary`);
-                    yield exec_1.exec('curl', [
-                        '-Lo',
-                        firebaseBinaryPath,
-                        'https://firebase.tools/bin/linux/v8.4.3',
-                    ]);
-                    core_1.info(`Downloaded firebase binary, making executable`);
-                    yield exec_1.exec('chmod', ['+x', firebaseBinaryPath]);
-                    core_1.info(`Chmod successful, adding to cache dir`);
-                    const cachedPath = yield toolCache.cacheDir(firebaseBinaryPath, 'firebase', '8.4.3');
-                    core_1.info(`Added firebase binary to cache dir, adding cache dir to path`);
-                    core_1.addPath(cachedPath);
-                    // addPath(firebaseBinaryPath);
-                    core_1.info(`Added firebase binary to path`);
+                    // const firebaseBinaryPath = `${GITHUB_WORKSPACE}/firebase_bin`;
+                    // info(`Downloading firebase binary`);
+                    // await exec('curl', [
+                    //   '-Lo',
+                    //   firebaseBinaryPath,
+                    //   'https://firebase.tools/bin/linux/v8.4.3',
+                    // ]);
+                    // info(`Downloaded firebase binary, making executable`);
+                    // await exec('chmod', ['+x', firebaseBinaryPath]);
+                    // info(`Chmod successful, adding to cache dir`);
+                    // const cachedPath = await toolCache.cacheDir(
+                    //   firebaseBinaryPath,
+                    //   'firebase',
+                    //   '8.4.3',
+                    // );
+                    // info(`Added firebase binary to cache dir, adding cache dir to path`);
+                    // addPath(cachedPath);
+                    // // addPath(firebaseBinaryPath);
+                    // info(`Added firebase binary to path`);
+                    // Get yarn bin to find firebase command
+                    const yarnBin = yield runCommandWithOutput('yarn', ['bin']);
+                    const firebaseCommand = `${yarnBin}/firebase`;
+                    core_1.info(`Command with bin path: ${firebaseCommand}`);
                     // SHeebang mod
                     // const nodeFullPath = `${nodePath}/bin/node`;
                     // const firebasePath = `${GITHUB_WORKSPACE}/node_modules/.bin/firebase`;
@@ -1894,7 +1935,7 @@ function run() {
                     // const cwd = homedir();
                     // Call deploy command with listener for output (so that in case of failure,
                     // it can be parsed for a list of functions which must be re-deployed)
-                    const deployExitCode = yield exec_1.exec(firebaseBinaryPath, [...deployArgs, '--project', projectId], {
+                    const deployExitCode = yield exec_1.exec(firebaseCommand, [...deployArgs, '--project', projectId], {
                         listeners: {
                             stdout: (data) => {
                                 deployCommandOutput += data.toString();
@@ -1914,7 +1955,7 @@ function run() {
                             const searchResults = /To try redeploying those functions, run:\n\s*firebase\s(.*)/g.exec(deployCommandOutput);
                             const newDeployCommand = searchResults && searchResults[1];
                             let secondDeployOutput = '';
-                            const secondDeployExitCode = yield exec_1.exec(firebaseBinaryPath, [...((newDeployCommand === null || newDeployCommand === void 0 ? void 0 : newDeployCommand.split(' ')) || [])], {
+                            const secondDeployExitCode = yield exec_1.exec(firebaseCommand, [...((newDeployCommand === null || newDeployCommand === void 0 ? void 0 : newDeployCommand.split(' ')) || [])], {
                                 listeners: {
                                     stdout: (data) => {
                                         secondDeployOutput += data.toString();
