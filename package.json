@@ -15,7 +15,7 @@
     "@actions/exec": "^1.0.4",
     "@actions/github": "^4.0.0",
     "@actions/io": "^1.0.2",
-    "lodash": "^4.17.15"
+    "lodash": "^4.17.21"
   },
   "devDependencies": {
     "@types/jest": "^26.0.0",
